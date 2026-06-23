@@ -1,0 +1,9 @@
+rmdir /s /q build
+
+
+cmake -S C:\dev\sapp-http -B build -A Win32 ^
+-DCMAKE_TOOLCHAIN_FILE=C:\dev\vcpkg\scripts\buildsystems\vcpkg.cmake ^
+-DVCPKG_TARGET_TRIPLET=x86-windows-static
+
+
+cmake --build build --config Release
