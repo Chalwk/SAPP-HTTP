@@ -1,0 +1,67 @@
+name: Build SAPP HTTP DLL
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:
+      - '*'                 # triggers on any tag (e.g., 1.0.0, v1.0.1)
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:        # allows manual trigger from Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history to ensure tags are available
+
+      - name: Setup vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg C:\dev\vcpkg
+          C:\dev\vcpkg\bootstrap-vcpkg.bat
+        shell: cmd
+
+      - name: Cache vcpkg installed packages
+        uses: actions/cache@v4
+        with:
+          path: C:\dev\vcpkg\installed
+          key: ${{ runner.os }}-vcpkg-curl-x86-static
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-
+
+      - name: Install libcurl (x86 static)
+        run: C:\dev\vcpkg\vcpkg.exe install curl:x86-windows-static
+        shell: cmd
+
+      - name: Configure CMake (32-bit)
+        run: |
+          cmake -S . -B build -A Win32 ^
+            -DCMAKE_TOOLCHAIN_FILE=C:/dev/vcpkg/scripts/buildsystems/vcpkg.cmake ^
+            -DVCPKG_TARGET_TRIPLET=x86-windows-static
+        shell: cmd
+
+      - name: Build DLL (Release)
+        run: cmake --build build --config Release
+        shell: cmd
+
+      - name: Upload DLL as workflow artifact (always)
+        uses: actions/upload-artifact@v4
+        with:
+          name: sapp_http.dll
+          path: build\Release\sapp_http.dll
+
+      - name: Create Release and Upload Asset (on tag push)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/Release/sapp_http.dll
+          generate_release_notes: true   # auto-generates release notes from commits
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
