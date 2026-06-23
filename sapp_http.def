@@ -1,0 +1,9 @@
+LIBRARY sapp_http
+EXPORTS
+    sapp_http_global_init
+    sapp_http_global_cleanup
+    sapp_http_get
+    sapp_http_post
+    sapp_http_free_response
+    sapp_http_version
+    sapp_http_curl_strerror
