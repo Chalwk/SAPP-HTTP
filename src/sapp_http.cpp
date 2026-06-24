@@ -94,7 +94,7 @@ namespace
             return 0;
 
         const size_t needed = buf->size + total + 1;
-        if (needed < buf->size || needed < total || needed > std::numeric_limits<size_t>::max())
+        if (needed < buf->size || needed < total || needed > (std::numeric_limits<size_t>::max)())
             return 0;
 
         char *grown = static_cast<char *>(std::realloc(buf->data, needed));
