@@ -177,7 +177,6 @@ namespace
             if (!curl)
                 continue;
 
-            // Build Host header
             struct curl_slist *headers = nullptr;
             std::string host_line = "Host: ";
             host_line += servers[attempt].host_header;
@@ -188,7 +187,7 @@ namespace
                 continue;
             }
 
-            curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, 15000L); // 15 seconds
+            curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, 15000L);
             curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
             curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buf);
@@ -197,7 +196,7 @@ namespace
             curl_easy_setopt(curl, CURLOPT_USERAGENT, "sapp-http/1.0");
             curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
             curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
-            curl_easy_setopt(curl, CURLOPT_PROXY, ""); // disable proxy
+            curl_easy_setopt(curl, CURLOPT_PROXY, "");
             curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
@@ -236,7 +235,7 @@ namespace
             }
         }
 
-        return ""; // all attempts failed
+        return "";
     }
 
     static int do_request_get(
@@ -261,11 +260,9 @@ namespace
         if (!curl)
             return set_wrapper_error(out_response, SAPPHTTP_E_CURL_INIT_FAILED, "curl_easy_init failed");
 
-        // Disable proxy and force IPv4
         curl_easy_setopt(curl, CURLOPT_PROXY, "");
         curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
-        // Custom DNS resolution via DoH
         struct curl_slist *resolve_list = nullptr;
         std::string hostname;
         const char *host_start = strstr(url, "://");
@@ -545,7 +542,167 @@ namespace
         return SAPPHTTP_OK;
     }
 
-} // namespace
+    static int do_request_put(
+        const char *url,
+        const char *content_type,
+        const char *body,
+        size_t body_size,
+        const sapp_http_header *headers,
+        size_t header_count,
+        sapp_http_response *out_response)
+    {
+        if (!url || !*url || !out_response)
+            return set_wrapper_error(out_response, SAPPHTTP_E_INVALID_ARGUMENT, "invalid argument");
+
+        clear_response(out_response);
+
+        {
+            std::lock_guard<std::mutex> lock(g_init_mutex);
+            const int init_code = ensure_initialized_locked();
+            if (init_code != SAPPHTTP_OK)
+                return set_wrapper_error(out_response, init_code, "curl_global_init failed");
+        }
+
+        CURL *curl = curl_easy_init();
+        if (!curl)
+            return set_wrapper_error(out_response, SAPPHTTP_E_CURL_INIT_FAILED, "curl_easy_init failed");
+
+        curl_easy_setopt(curl, CURLOPT_PROXY, "");
+        curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+
+        struct curl_slist *resolve_list = nullptr;
+        std::string hostname;
+        const char *host_start = strstr(url, "://");
+        if (host_start)
+        {
+            host_start += 3;
+            const char *host_end = strchr(host_start, '/');
+            if (!host_end)
+                host_end = host_start + strlen(host_start);
+            hostname = std::string(host_start, host_end - host_start);
+        }
+        size_t colon_pos = hostname.find(':');
+        if (colon_pos != std::string::npos)
+            hostname = hostname.substr(0, colon_pos);
+
+        if (!hostname.empty() && !std::isdigit(hostname[0]))
+        {
+            std::string ip = resolve_via_doh(hostname);
+            if (!ip.empty())
+            {
+                int port = 80;
+                if (strstr(url, "https://"))
+                    port = 443;
+                const char *colon = strchr(host_start, ':');
+                if (colon && colon < (host_start + hostname.length()))
+                {
+                    port = atoi(colon + 1);
+                }
+                char port_str[16];
+                snprintf(port_str, sizeof(port_str), "%d", port);
+                std::string resolve_str = hostname + ":" + port_str + ":" + ip;
+                resolve_list = curl_slist_append(nullptr, resolve_str.c_str());
+                if (resolve_list)
+                {
+                    curl_easy_setopt(curl, CURLOPT_RESOLVE, resolve_list);
+                }
+            }
+        }
+
+        char error_buffer[CURL_ERROR_SIZE] = {0};
+        memory_buffer resp_body{nullptr, 0};
+        curl_slist *header_list = build_headers(headers, header_count, content_type);
+
+        if ((headers && header_count > 0) || (content_type && *content_type))
+        {
+            if (!header_list)
+            {
+                curl_slist_free_all(resolve_list);
+                curl_easy_cleanup(curl);
+                return set_wrapper_error(out_response, SAPPHTTP_E_OUT_OF_MEMORY, "failed to build header list");
+            }
+        }
+
+        CURLcode code = CURLE_OK;
+        code = curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, error_buffer);
+        if (code == CURLE_OK)
+            code = curl_easy_setopt(curl, CURLOPT_URL, url);
+        if (code == CURLE_OK)
+            code = curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        if (code == CURLE_OK)
+            code = curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 10L);
+        if (code == CURLE_OK)
+            code = curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+        if (code == CURLE_OK)
+            code = curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
+        if (code == CURLE_OK)
+            code = curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
+        if (code == CURLE_OK)
+            code = curl_easy_setopt(curl, CURLOPT_USERAGENT, "sapp-http/1.0");
+        if (code == CURLE_OK)
+            code = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
+        if (code == CURLE_OK)
+            code = curl_easy_setopt(curl, CURLOPT_WRITEDATA, &resp_body);
+        if (code == CURLE_OK)
+            code = curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header_list);
+
+        if (code == CURLE_OK)
+            code = curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
+        if (code == CURLE_OK)
+            code = curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body ? body : "");
+        if (code == CURLE_OK)
+            code = curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE_LARGE, static_cast<curl_off_t>(body_size));
+
+        if (code == CURLE_OK)
+            code = curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, 10000L);
+        if (code == CURLE_OK)
+            code = curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, 30000L);
+
+        if (code != CURLE_OK)
+        {
+            const char *msg = error_buffer[0] ? error_buffer : curl_easy_strerror(code);
+            curl_slist_free_all(header_list);
+            curl_slist_free_all(resolve_list);
+            curl_easy_cleanup(curl);
+            std::free(resp_body.data);
+            return set_wrapper_error(out_response, SAPPHTTP_E_CURL_OPTION_FAILED, msg);
+        }
+
+        code = curl_easy_perform(curl);
+
+        long status = 0;
+        const char *ct = nullptr;
+        (void)curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status);
+        (void)curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &ct);
+
+        out_response->curl_code = static_cast<int>(code);
+        out_response->http_status = status;
+        out_response->body_size = resp_body.size;
+        out_response->body = resp_body.data;
+        out_response->content_type = dup_cstr(ct);
+
+        if (code != CURLE_OK)
+        {
+            const char *msg = error_buffer[0] ? error_buffer : curl_easy_strerror(code);
+            out_response->error_message = dup_cstr(msg);
+        }
+
+        curl_slist_free_all(header_list);
+        curl_slist_free_all(resolve_list);
+        curl_easy_cleanup(curl);
+
+        if (resp_body.data == nullptr && resp_body.size != 0)
+        {
+            return set_wrapper_error(out_response, SAPPHTTP_E_OUT_OF_MEMORY, "failed to capture body");
+        }
+        if (out_response->content_type == nullptr && ct != nullptr)
+        {
+            return set_wrapper_error(out_response, SAPPHTTP_E_OUT_OF_MEMORY, "failed to copy content type");
+        }
+        return SAPPHTTP_OK;
+    }
+
+}
 
 extern "C"
 {
@@ -587,6 +744,18 @@ extern "C"
         return do_request_post(url, content_type, body, body_size, headers, header_count, out_response);
     }
 
+    int SAPPHTTP_CALL sapp_http_put(
+        const char *url,
+        const char *content_type,
+        const char *body,
+        size_t body_size,
+        const sapp_http_header *headers,
+        size_t header_count,
+        sapp_http_response *out_response)
+    {
+        return do_request_put(url, content_type, body, body_size, headers, header_count, out_response);
+    }
+
     void SAPPHTTP_CALL sapp_http_free_response(sapp_http_response *response)
     {
         free_response_members(response);
@@ -601,5 +770,4 @@ extern "C"
     {
         return curl_easy_strerror(static_cast<CURLcode>(curl_code));
     }
-
-} // extern "C"
+}

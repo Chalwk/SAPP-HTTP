@@ -63,6 +63,15 @@ extern "C"
       size_t header_count,
       sapp_http_response *out_response);
 
+  SAPPHTTP_API int SAPPHTTP_CALL sapp_http_put(
+      const char *url,
+      const char *content_type,
+      const char *body,
+      size_t body_size,
+      const sapp_http_header *headers,
+      size_t header_count,
+      sapp_http_response *out_response);
+
   SAPPHTTP_API void SAPPHTTP_CALL sapp_http_free_response(sapp_http_response *response);
 
   SAPPHTTP_API const char *SAPPHTTP_CALL sapp_http_version(void);
