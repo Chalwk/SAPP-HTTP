@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.21)
 
 project(sapp_http VERSION 1.0.0 LANGUAGES CXX)
 
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
 add_compile_definitions(NOMINMAX)
 add_library(sapp_http SHARED
     src/sapp_http.cpp
