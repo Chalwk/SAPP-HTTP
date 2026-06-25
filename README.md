@@ -1,36 +1,32 @@
 # SAPP HTTP Client DLL
 
-A lightweight HTTP/HTTPS client DLL for SAPP, (Halo Custom Edition server extension), exposing a C API via LuaJIT FFI.
-Uses **libcurl** for all network operations.
+A lightweight HTTP/HTTPS client DLL for SAPP (Halo Custom Edition server extension) that exposes a C API through LuaJIT
+FFI, allowing Lua scripts to perform HTTP(S) GET, POST, and PUT requests using **libcurl**.
 
----
-
-## Description
-
-This project provides a Windows 32-bit DLL (`sapp_http.dll`) that adds HTTP(S) GET, POST, and PUT capabilities to SAPP's
-Lua scripting environment. It is built with **MSVC**, **CMake**, and **vcpkg** (for libcurl).
+Built with **MSVC**, **CMake**, and **vcpkg**.
 
 **Exported functions:**
 
-- `sapp_http_global_init` / `sapp_http_global_cleanup`
-- `sapp_http_get`
-- `sapp_http_post`
-- `sapp_http_put`
-- `sapp_http_free_response`
-- `sapp_http_version`
-- `sapp_http_curl_strerror`
+* `sapp_http_global_init` / `sapp_http_global_cleanup`
+* `sapp_http_get`
+* `sapp_http_post`
+* `sapp_http_put`
+* `sapp_http_free_response`
+* `sapp_http_version`
+* `sapp_http_curl_strerror`
 
-See [`sapp_http.h`](include/sapp_http.h) for the full API.
+See [`sapp_http.h`](include/sapp_http.h) for the complete API.
 
 ---
 
 ## Requirements
 
-- **Windows** (x86 32-bit)
-- **Visual Studio Build Tools 2022** (or later) with the **Desktop development with C++** workload  
-  (including MSVC v143, Windows 10/11 SDK, CMake tools, and vcpkg)
-- **CMake** (≥ 3.21)
-- **Git** (to clone vcpkg)
+* **Visual Studio Build Tools 2022** (or later) with the **Desktop development with C++** workload
+    * MSVC v143
+    * Windows 10/11 SDK
+    * CMake tools
+    * vcpkg
+* **CMake** 3.21 or later
 
 ---
 
