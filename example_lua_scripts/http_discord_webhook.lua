@@ -1,5 +1,6 @@
 -- Copyright (c) 2026 Jericho Crosby (Chalwk)
 
+---@diagnostic disable-next-line: unresolved-require
 local ffi = require("ffi")
 local http = ffi.load("sapp_http") -- load the HTTP library
 

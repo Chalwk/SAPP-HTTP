@@ -1,5 +1,6 @@
 -- Copyright (c) 2026 Jericho Crosby (Chalwk)
 
+---@diagnostic disable-next-line: unresolved-require
 local ffi = require("ffi")
 local http_helper = require("http_helper")
 
