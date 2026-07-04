@@ -7,7 +7,7 @@
 #include <stdint.h>
 
 // ------------------------------------------------------------------
-//  Platform‑specific export/import macros
+//  Platform-specific export/import macros
 //  For Windows we use __declspec(dllexport/dllimport), 
 //  for others we rely on default visibility.
 // ------------------------------------------------------------------
@@ -53,7 +53,7 @@ extern "C"
   // - `curl_code` is the libcurl CURLcode (cast to int).
   // - `http_status` is the response status code (e.g. 200, 404).
   // - `body` and `body_size` contain the response body (if any).
-  // - `content_type` is the Content‑Type header from the server.
+  // - `content_type` is the Content-Type header from the server.
   // - `error_message` is set when something goes wrong (libcurl error or our wrapper error).
   //
   // All dynamically allocated strings inside are owned by the caller
@@ -86,7 +86,7 @@ extern "C"
       sapp_http_response *out_response);
 
   // Perform a POST request.
-  // `content_type` sets the Content‑Type header (e.g. "application/json").
+  // `content_type` sets the Content-Type header (e.g. "application/json").
   // `body` and `body_size` are the payload to send.
   // If `body` is null, an empty body is sent.
   // Headers work the same as for GET.
@@ -117,7 +117,7 @@ extern "C"
   // Returns the libcurl version string - handy for debugging.
   SAPPHTTP_API const char *SAPPHTTP_CALL sapp_http_version(void);
 
-  // Converts a libcurl CURLcode (as int) to a human‑readable error string.
+  // Converts a libcurl CURLcode (as int) to a human-readable error string.
   SAPPHTTP_API const char *SAPPHTTP_CALL sapp_http_curl_strerror(int curl_code);
 
 #ifdef __cplusplus

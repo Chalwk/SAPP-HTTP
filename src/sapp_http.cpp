@@ -190,7 +190,7 @@ namespace
     // ------------------------------------------------------------------
     //  TODO: refactor this nonsense.
     //
-    //  DNS‑over‑HTTPS resolution (fallback when normal DNS is broken)
+    //  DNS-over-HTTPS resolution (fallback when normal DNS is broken)
     //  Tries Google and Cloudflare, returns first IP found.
     //  Not idea, but I'll keep it simple for now.
     // ------------------------------------------------------------------
@@ -288,7 +288,7 @@ namespace
 
         clear_response(out_response);
 
-        // Ensure libcurl is globally initialised (should be thread‑safe, I hope lol)
+        // Ensure libcurl is globally initialised (should be thread-safe, I hope lol)
         {
             std::lock_guard<std::mutex> lock(g_init_mutex);
             if (!g_initialized)
@@ -309,11 +309,11 @@ namespace
             return set_wrapper_error(out_response, SAPPHTTP_E_CURL_INIT_FAILED,
                                      "curl_easy_init failed");
 
-        // Disable proxy and force IPv4 (Halo is 32‑bit and may have issues with IPv6)
+        // Disable proxy and force IPv4 (Halo is 32-bit and may have issues with IPv6)
         curl_easy_setopt(curl.get(), CURLOPT_PROXY, "");
         curl_easy_setopt(curl.get(), CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
-        // --- DNS‑over‑HTTPS fallback (if hostname is not an IP) ---
+        // --- DNS-over-HTTPS fallback (if hostname is not an IP) ---
         // We extract the hostname from the URL and try to resolve it via DoH.
         // Might help when the game's environment has broken DNS (common on some servers).
         std::string hostname;
@@ -352,7 +352,7 @@ namespace
             }
         }
 
-        // Build headers (including Content‑Type if provided)
+        // Build headers (including Content-Type if provided)
         if (content_type && *content_type)
         {
             std::string ct = "Content-Type: ";
@@ -425,7 +425,7 @@ namespace
             return set_wrapper_error(out_response, SAPPHTTP_E_CURL_OPTION_FAILED, msg);
         }
 
-        // Method‑specific options
+        // Method-specific options
         CURLcode code = CURLE_OK;
         switch (method)
         {
