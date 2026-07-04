@@ -5,6 +5,15 @@ FFI, allowing Lua scripts to perform HTTP(S) GET, POST, and PUT requests using *
 
 Built with **MSVC**, **CMake**, and **vcpkg**.
 
+[![Version][version-badge]][version-link]
+[![License: MIT][license-badge]][license-link]
+![C++17][cpp-badge]
+![MSVC][msvc-badge]
+![libcurl][curl-badge]
+![Windows][windows-badge]
+![CMake][cmake-badge]
+![vcpkg][vcpkg-badge]
+
 **Exported functions:**
 
 * `sapp_http_global_init` / `sapp_http_global_cleanup`
@@ -243,3 +252,14 @@ This project is provided under the [MIT licence](LICENSE).
 libcurl is distributed under the [curl licence](https://curl.se/docs/copyright.html).
 
 ---
+
+[version-badge]: https://img.shields.io/github/v/release/Chalwk/SAPP-HTTP?display_name=tag
+[version-link]: https://github.com/Chalwk/SAPP-HTTP/releases/latest
+[license-badge]: https://img.shields.io/github/license/Chalwk/SAPP-HTTP
+[license-link]: https://github.com/Chalwk/SAPP-HTTP/blob/main/LICENSE
+[cpp-badge]: https://img.shields.io/badge/C%2B%2B-17-00599C?logo=cplusplus&logoColor=white
+[msvc-badge]: https://img.shields.io/badge/MSVC-2022-5C2D91?logo=visualstudio&logoColor=white
+[curl-badge]: https://img.shields.io/badge/libcurl-8.x-073551?logo=curl&logoColor=white
+[windows-badge]: https://img.shields.io/badge/Windows-10%2F11-0078D6?logo=windows&logoColor=white
+[cmake-badge]: https://img.shields.io/badge/CMake-3.21%2B-064F8C?logo=cmake&logoColor=white
+[vcpkg-badge]: https://img.shields.io/badge/vcpkg-Package%20Manager-0C7BDC
