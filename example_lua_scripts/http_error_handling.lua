@@ -23,8 +23,14 @@ int sapp_http_global_init(void);
 void sapp_http_global_cleanup(void);
 int sapp_http_get(const char *url, const sapp_http_header *headers, size_t header_count, sapp_http_response *out_response);
 void sapp_http_free_response(sapp_http_response *response);
+const char *sapp_http_version(void);
 const char *sapp_http_curl_strerror(int curl_code);
 ]]
+
+local function cstr(ptr)
+    if ptr == nil or ptr == ffi.NULL then return "(null)" end
+    return ffi.string(ptr)
+end
 
 api_version = "1.12.0.0"
 
@@ -35,8 +41,7 @@ function OnScriptLoad()
         return
     end
 
-    -- FIX: wrap with ffi.string()
-    print("libcurl version: " .. ffi.string(http.sapp_http_version()))
+    print("libcurl version: " .. cstr(http.sapp_http_version()))
 
     -- Test 1: Invalid URL
     local resp = ffi.new("sapp_http_response")
@@ -44,9 +49,9 @@ function OnScriptLoad()
     local ret = http.sapp_http_get("not_a_valid_url", nil, 0, resp) -- fire off a GET request
     print("Return code: " .. ret)
     print("curl_code  : " .. resp.curl_code)
-    if resp.error_message ~= nil then
+    if resp.error_message ~= nil and resp.error_message ~= ffi.NULL then
         print("error_msg  : " .. ffi.string(resp.error_message))
-        print("curl_strerror: " .. ffi.string(http.sapp_http_curl_strerror(resp.curl_code)))
+        print("curl_strerror: " .. cstr(http.sapp_http_curl_strerror(resp.curl_code)))
     end
     http.sapp_http_free_response(resp) -- free the response memory
 
@@ -56,9 +61,9 @@ function OnScriptLoad()
     ret = http.sapp_http_get("https://this-domain-does-not-exist-12345.com", nil, 0, resp) -- fire off a GET request
     print("Return code: " .. ret)
     print("curl_code  : " .. resp.curl_code)
-    if resp.error_message ~= nil then
+    if resp.error_message ~= nil and resp.error_message ~= ffi.NULL then
         print("error_msg  : " .. ffi.string(resp.error_message))
-        print("curl_strerror: " .. ffi.string(http.sapp_http_curl_strerror(resp.curl_code)))
+        print("curl_strerror: " .. cstr(http.sapp_http_curl_strerror(resp.curl_code)))
     end
     http.sapp_http_free_response(resp) -- free the response memory
 
@@ -69,15 +74,15 @@ function OnScriptLoad()
     print("Return code: " .. ret)
     print("curl_code  : " .. resp.curl_code)
     print("http_status: " .. resp.http_status)
-    if resp.body ~= nil then
+    if resp.body ~= nil and resp.body ~= ffi.NULL then
         print("body       : " .. ffi.string(resp.body, resp.body_size))
     end
-    if resp.error_message ~= nil then
+    if resp.error_message ~= nil and resp.error_message ~= ffi.NULL then
         print("error_msg  : " .. ffi.string(resp.error_message))
     end
     http.sapp_http_free_response(resp) -- free the response memory
-
-    http.sapp_http_global_cleanup() -- shut down cURL
 end
 
-function OnScriptUnload() end
+function OnScriptUnload()
+    http.sapp_http_global_cleanup() -- shut down cURL
+end

@@ -49,14 +49,15 @@ function OnScriptLoad()
             print("SUCCESS: Webhook sent! (HTTP " .. resp.http_status .. ")")
         else
             print("WARNING: Webhook returned HTTP " .. resp.http_status)
-            if resp.body ~= nil then
+            if resp.body ~= nil and resp.body ~= ffi.NULL then
                 print("Response: " .. ffi.string(resp.body, resp.body_size))
             end
         end
     end
 
     http.sapp_http_free_response(resp) -- free the response memory
-    http.sapp_http_global_cleanup() -- shut down cURL
 end
 
-function OnScriptUnload() end
+function OnScriptUnload()
+    http.sapp_http_global_cleanup() -- shut down cURL
+end

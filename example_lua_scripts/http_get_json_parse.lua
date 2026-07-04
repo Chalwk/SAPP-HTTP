@@ -44,7 +44,7 @@ function OnScriptLoad()
     local ret = http.sapp_http_get(url, nil, 0, resp) -- fire off a GET request
     print("sapp_http_get returned: " .. ret)
 
-    if ret == 0 and resp.body ~= nil then
+    if ret == 0 and resp.body ~= nil and resp.body ~= ffi.NULL then
         local json = ffi.string(resp.body, resp.body_size)
         print("Raw JSON:")
         print(json)
@@ -57,7 +57,8 @@ function OnScriptLoad()
     end
 
     http.sapp_http_free_response(resp) -- free the response memory
-    http.sapp_http_global_cleanup() -- shut down cURL
 end
 
-function OnScriptUnload() end
+function OnScriptUnload()
+    http.sapp_http_global_cleanup() -- shut down cURL
+end

@@ -48,13 +48,14 @@ function OnScriptLoad()
     local ret = http.sapp_http_post(url, content_type, json_body, #json_body, headers, 2, resp) -- fire off a POST request
     print("sapp_http_post returned: " .. ret)
 
-    if ret == 0 and resp.body ~= nil then
+    if ret == 0 and resp.body ~= nil and resp.body ~= ffi.NULL then
         print("Response:")
         print(ffi.string(resp.body, resp.body_size))
     end
 
     http.sapp_http_free_response(resp) -- free the response memory
-    http.sapp_http_global_cleanup() -- shut down cURL
 end
 
-function OnScriptUnload() end
+function OnScriptUnload()
+    http.sapp_http_global_cleanup() -- shut down cURL
+end

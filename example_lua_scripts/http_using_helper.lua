@@ -12,12 +12,13 @@ function OnScriptLoad()
     local ret, resp = http_helper.get("https://httpbin.org/get")
     print("GET returned: " .. ret)
 
-    if ret == 0 and resp.body ~= nil then
+    if ret == 0 and resp.body ~= nil and resp.body ~= ffi.NULL then
         print("Body: " .. ffi.string(resp.body, resp.body_size))
     end
 
     http_helper.free(resp) -- free the response memory
-    http_helper.cleanup() -- shut down cURL
 end
 
-function OnScriptUnload() end
+function OnScriptUnload()
+    http_helper.cleanup() -- shut down cURL
+end
