@@ -66,8 +66,8 @@ function OnScriptLoad()
     -- Print libcurl version for verification
     print("libcurl version: " .. ffi.string(http.sapp_http_version()))
 
-    -- Fetch text.txt from GitHub (raw URL)
-    local url = "https://raw.githubusercontent.com/Chalwk/SAPP-HTTP/main/text.txt"
+    -- Fetch test.txt from GitHub (raw URL)
+    local url = "https://raw.githubusercontent.com/Chalwk/SAPP-HTTP/main/test.txt"
     local resp = ffi.new("sapp_http_response")
 
     print("\n--- GET request to: " .. url .. " ---")

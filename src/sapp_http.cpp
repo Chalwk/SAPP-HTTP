@@ -295,7 +295,9 @@ namespace {
             }
         }
 
-        // Create easy handle
+        // Declare slist holders BEFORE the easy handle so they are destroyed after it
+        curl_slist_holder resolve_list;
+        curl_slist_holder header_list;
         curl_handle curl;
         if (!curl)
             return set_wrapper_error(out_response, SAPPHTTP_E_CURL_INIT_FAILED,
@@ -308,7 +310,6 @@ namespace {
         // --- DNS‑over‑HTTPS fallback (if hostname is not an IP) ---
         // We extract the hostname from the URL and try to resolve it via DoH.
         // Might help when the game's environment has broken DNS (common on some servers).
-        curl_slist_holder resolve_list;
         std::string hostname;
         const char* host_start = strstr(url, "://");
         if (host_start) {
@@ -340,7 +341,6 @@ namespace {
         }
 
         // Build headers (including Content‑Type if provided)
-        curl_slist_holder header_list;
         if (content_type && *content_type) {
             std::string ct = "Content-Type: ";
             ct += content_type;
@@ -426,6 +426,10 @@ namespace {
 
         // Perform the request
         CURLcode res = curl_easy_perform(curl.get());
+
+        // Detach the slist objects to prevent double-free!
+        curl_easy_setopt(curl.get(), CURLOPT_RESOLVE, nullptr);
+        curl_easy_setopt(curl.get(), CURLOPT_HTTPHEADER, nullptr);
 
         // Extract response info
         long status = 0;
