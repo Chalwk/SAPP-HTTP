@@ -1,28 +1,6 @@
-# Build output
 build/
 
-# IDE directories
-.idea/
-.vscode/
-
-# CMake generated files
 CMakeCache.txt
-cmake_install.cmake
 CMakeFiles/
 
-# VS specific stuff
-*.user
-*.suo
-*.sln.docstates
-
-# Windows compiled artifacts
-*.dll
-*.lib
-*.exp
-*.obj
-*.pdb
-*.ilk
-*.exe
-
-# vcpkg dependency cache
-vcpkg_installed/
+.idea/

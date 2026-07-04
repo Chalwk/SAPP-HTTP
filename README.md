@@ -70,7 +70,7 @@ cd C:\dev\sapp-http
 
 ```cmd
 cmake -B build -A Win32 ^
-  -DCMAKE_TOOLCHAIN_FILE=C:\dev\vcpkg\scripts\buildsystems\vcpkg.cmake ^
+  -DCMAKE_TOOLCHAIN_FILE=C:/dev/vcpkg/scripts/buildsystems/vcpkg.cmake ^
   -DVCPKG_TARGET_TRIPLET=x86-windows-static
 ```
 
