@@ -1,7 +1,8 @@
+-- Copyright (c) 2026 Jericho Crosby (Chalwk)
+
 local ffi = require("ffi")
 local http = ffi.load("sapp_http")
 
--- C declarations
 ffi.cdef [[
 typedef struct sapp_http_header {
     const char *name;
@@ -55,8 +56,7 @@ end
 api_version = "1.12.0.0"
 
 function OnScriptLoad()
-    -- Initialize libcurl
-    local init_ret = http.sapp_http_global_init()
+    local init_ret = http.sapp_http_global_init() -- start up cURL
     if init_ret ~= 0 then
         print("Init failed with code " .. init_ret)
         return
@@ -70,7 +70,7 @@ function OnScriptLoad()
     local resp = ffi.new("sapp_http_response")
 
     print("\n--- GET request to: " .. url .. " ---")
-    local ret = http.sapp_http_get(url, nil, 0, resp)
+    local ret = http.sapp_http_get(url, nil, 0, resp) -- fire off a GET request
     print("sapp_http_get returned: " .. ret)
     print_response(resp)
 
@@ -89,11 +89,9 @@ function OnScriptLoad()
         end
     end
 
-    -- Free the response memory
-    http.sapp_http_free_response(resp)
+    http.sapp_http_free_response(resp) -- free the response memory
 
-    -- Clean up libcurl
-    http.sapp_http_global_cleanup()
+    http.sapp_http_global_cleanup() -- shut down cURL
 end
 
 function OnScriptUnload() end

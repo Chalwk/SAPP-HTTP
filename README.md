@@ -123,7 +123,36 @@ Then, from your Lua scripts, use `ffi.load("sapp_http")` and call the API.
 
 ## Example Lua scripts:
 
+This is the example fetches a `plain text file` from GitHub.
 - [http_get_text.lua](/example_lua_scripts/http_get_text.lua)
+
+This example adds a custom `User-Agent` and `X-Custom-Header` to the request.
+- [http_get_with_headers.lua](/example_lua_scripts/http_get_with_headers.lua)
+
+This example sends a `JSON` payload to an API endpoint and reads the response.
+- [http_post_json.lua](/example_lua_scripts/http_post_json.lua)
+
+This example sends `application/x-www-form-urlencoded` data (like a HTML form submission).
+- [http_post_form.lua](/example_lua_scripts/http_post_form.lua)
+
+This example combines a `POST` request with additional headers.
+- [http_post_with_headers.lua](/example_lua_scripts/http_post_with_headers.lua)
+
+This example demonstrates updating a resource with a `PUT` request.
+- [http_put.lua](/example_lua_scripts/http_put.lua)
+
+This example shows how to handle various error conditions gracefully.
+- [http_error_handling.lua](/example_lua_scripts/http_http_error_handlingput.lua)
+
+This example fetches `JSON` data and demonstrates basic string manipulation to extract values.
+- [http_get_json_parse.lua](/example_lua_scripts/http_get_json_parse.lua)
+
+This example sends a message to a `Discord webhook` (replace the URL with your own).
+- [http_discord_webhook.lua](/example_lua_scripts/http_discord_webhook.lua)
+
+For scripts that make multiple `HTTP` requests, you can create a reusable helper module.
+- [http_helper.lua](/example_lua_scripts/http_helper.lua)
+- [http_using_helper.lua](/example_lua_scripts/http_using_helper.lua)
 
 ---
 
