@@ -1,6 +1,6 @@
 # SAPP HTTP Client DLL
 
-A lightweight HTTP/HTTPS client DLL for SAPP (Halo Custom Edition server extension) that exposes a C API through LuaJIT
+A lightweight HTTP/HTTPS client DLL for SAPP that exposes a C API through LuaJIT
 FFI, allowing Lua scripts to perform HTTP(S) GET, POST, and PUT requests using **libcurl**.
 
 Built with **MSVC**, **CMake**, and **vcpkg**.
@@ -57,27 +57,13 @@ git clone https://github.com/Chalwk/SAPP-HTTP.git C:\dev\sapp-http
 cd C:\dev\sapp-http
 ```
 
-Ensure the following files exist:
-
-```
-C:\dev\sapp-http\
-  CMakeLists.txt
-  sapp_http.def
-  include\sapp_http.h
-  src\sapp_http.cpp
-```
-
 ### 4. Configure with CMake
 
-Open the **x86 Native Tools Command Prompt for VS** (or any terminal where `cmake` is available) and run:
-
 ```cmd
-cmake -S C:\dev\sapp-http -B build -A Win32 ^
+cmake -B build -A Win32 ^
   -DCMAKE_TOOLCHAIN_FILE=C:\dev\vcpkg\scripts\buildsystems\vcpkg.cmake ^
   -DVCPKG_TARGET_TRIPLET=x86-windows-static
 ```
-
-This generates 32-bit Visual Studio project files and locates the libcurl dependencies via vcpkg.
 
 ### 5. Build the DLL
 
@@ -85,11 +71,7 @@ This generates 32-bit Visual Studio project files and locates the libcurl depend
 cmake --build build --config Release
 ```
 
-On success, the DLL is created at:
-
-```
-C:\dev\sapp-http\build\Release\sapp_http.dll
-```
+On success, the DLL is created at: `C:\dev\sapp-http\build\Release\sapp_http.dll`
 
 ---
 
@@ -259,3 +241,5 @@ end
 
 This project is provided under the [MIT licence](LICENSE).  
 libcurl is distributed under the [curl licence](https://curl.se/docs/copyright.html).
+
+---
