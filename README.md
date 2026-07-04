@@ -94,6 +94,11 @@ On success, the DLL is created at: `C:\dev\sapp-http\build\Release\sapp_http.dll
 > ```
 >
 > Adjust the paths to match your own vcpkg installation. After saving, run `CMake: Configure` from the command palette to refresh the configuration.
+>
+> **Important: As Halo is a 32-bit application, the architecture in your CMake Tools settings must match the vcpkg triplet.**  
+> For the default triplet `x86-windows-static`, you need a 32-bit (Win32) build target. To enforce this:
+>
+> **Select the right kit** - Press `Ctrl+Shift+P`, choose `CMake: Select Kit`, and pick a kit that targets **x86** (e.g., `VS Build Tools ... - amd64_x86` or `VS Build Tools ... - x86`).  
 
 ---
 
