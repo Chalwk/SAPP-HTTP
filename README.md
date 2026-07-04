@@ -123,6 +123,9 @@ Then, from your Lua scripts, use `ffi.load("sapp_http")` and call the API.
 
 ## Example Lua scripts:
 
+<details>
+<summary>Click to expand</summary>
+
 Fetches a `plain text file` from GitHub.
 - [http_get_text.lua](/example_lua_scripts/http_get_text.lua)
 
@@ -153,6 +156,8 @@ Sends a message to a `Discord webhook` (replace the URL with your own).
 For scripts that make multiple `HTTP` requests, you can create a reusable helper module.
 - [http_helper.lua](/example_lua_scripts/http_helper.lua)
 - [http_using_helper.lua](/example_lua_scripts/http_using_helper.lua)
+
+</details>
 
 ---
 
