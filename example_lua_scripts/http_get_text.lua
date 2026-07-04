@@ -41,17 +41,26 @@ const char *sapp_http_version(void);
 const char *sapp_http_curl_strerror(int curl_code);
 ]]
 
+local function cstr(ptr)
+    if ptr == nil or ptr == ffi.NULL then
+        return "(null)"
+    end
+    return ffi.string(ptr)
+end
+
 local function print_response(resp)
     print("  curl_code   : " .. resp.curl_code)
     print("  http_status : " .. resp.http_status)
     print("  body_size   : " .. resp.body_size)
-    if resp.body ~= nil then
+
+    if resp.body ~= nil and resp.body ~= ffi.NULL then
         print("  body        : " .. ffi.string(resp.body, resp.body_size))
     else
         print("  body        : (null)")
     end
-    print("  content_type: " .. ((resp.content_type and ffi.string(resp.content_type)) or "(null)"))
-    print("  error_msg   : " .. ((resp.error_message and ffi.string(resp.error_message)) or "(none)"))
+
+    print("  content_type: " .. cstr(resp.content_type))
+    print("  error_msg   : " .. cstr(resp.error_message))
 end
 
 api_version = "1.12.0.0"
@@ -76,7 +85,7 @@ function OnScriptLoad()
     print_response(resp)
 
     -- Check if the request succeeded and the content matches
-    if ret == 0 and resp.curl_code == 0 and resp.body ~= nil then
+    if ret == 0 and resp.curl_code == 0 and resp.body ~= nil and resp.body ~= ffi.NULL then
         local content = ffi.string(resp.body, resp.body_size)
         if content == "success!" then
             print("\nSUCCESS: Retrieved 'success!' as expected.")
@@ -85,14 +94,14 @@ function OnScriptLoad()
         end
     else
         print("\nERROR: Failed to fetch the file.")
-        if resp.error_message ~= nil then
+        if resp.error_message ~= nil and resp.error_message ~= ffi.NULL then
             print("  curl error: " .. ffi.string(http.sapp_http_curl_strerror(resp.curl_code)))
         end
     end
 
     http.sapp_http_free_response(resp) -- free the response memory
-
-    http.sapp_http_global_cleanup() -- shut down cURL
 end
 
-function OnScriptUnload() end
+function OnScriptUnload()
+    http.sapp_http_global_cleanup() -- shut down cURL
+end
