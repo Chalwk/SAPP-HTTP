@@ -5,13 +5,16 @@ project(sapp_http VERSION 1.0.2 LANGUAGES CXX)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 add_compile_definitions(NOMINMAX)
+
 add_library(${PROJECT_NAME} SHARED
     src/sapp_http.cpp
-    sapp_http.def
+    src/sapp_http.def
 )
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE NOMINMAX)
-target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 target_compile_definitions(${PROJECT_NAME} PRIVATE SAPPHTTP_BUILD CURL_STATICLIB)
 
@@ -33,4 +36,4 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "sapp_http")
 
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin)
-install(FILES include/sapp_http.h DESTINATION include)
+install(FILES src/sapp_http.h DESTINATION include)
