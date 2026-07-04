@@ -126,7 +126,7 @@ Then, from your Lua scripts, use `ffi.load("sapp_http")` and call the API.
 Fetches a `plain text file` from GitHub.
 - [http_get_text.lua](/example_lua_scripts/http_get_text.lua)
 
-Aadds a custom `User-Agent` and `X-Custom-Header` to the request.
+Adds a custom `User-Agent` and `X-Custom-Header` to the request.
 - [http_get_with_headers.lua](/example_lua_scripts/http_get_with_headers.lua)
 
 Sends a `JSON` payload to an API endpoint and reads the response.
