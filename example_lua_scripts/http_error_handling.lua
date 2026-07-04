@@ -35,7 +35,8 @@ function OnScriptLoad()
         return
     end
 
-    print("libcurl version: " .. http.sapp_http_version())
+    -- FIX: wrap with ffi.string()
+    print("libcurl version: " .. ffi.string(http.sapp_http_version()))
 
     -- Test 1: Invalid URL
     local resp = ffi.new("sapp_http_response")
@@ -44,8 +45,8 @@ function OnScriptLoad()
     print("Return code: " .. ret)
     print("curl_code  : " .. resp.curl_code)
     if resp.error_message ~= nil then
-        print("error_msg  : " .. resp.error_message)
-        print("curl_strerror: " .. http.sapp_http_curl_strerror(resp.curl_code))
+        print("error_msg  : " .. ffi.string(resp.error_message))
+        print("curl_strerror: " .. ffi.string(http.sapp_http_curl_strerror(resp.curl_code)))
     end
     http.sapp_http_free_response(resp) -- free the response memory
 
@@ -56,8 +57,8 @@ function OnScriptLoad()
     print("Return code: " .. ret)
     print("curl_code  : " .. resp.curl_code)
     if resp.error_message ~= nil then
-        print("error_msg  : " .. resp.error_message)
-        print("curl_strerror: " .. http.sapp_http_curl_strerror(resp.curl_code))
+        print("error_msg  : " .. ffi.string(resp.error_message))
+        print("curl_strerror: " .. ffi.string(http.sapp_http_curl_strerror(resp.curl_code)))
     end
     http.sapp_http_free_response(resp) -- free the response memory
 
@@ -72,7 +73,7 @@ function OnScriptLoad()
         print("body       : " .. ffi.string(resp.body, resp.body_size))
     end
     if resp.error_message ~= nil then
-        print("error_msg  : " .. resp.error_message)
+        print("error_msg  : " .. ffi.string(resp.error_message))
     end
     http.sapp_http_free_response(resp) -- free the response memory
 

@@ -42,7 +42,7 @@ function M.init()
         local ret = http.sapp_http_global_init() -- start up cURL
         if ret == 0 then
             initialized = true
-            print("HTTP helper initialized: " .. http.sapp_http_version())
+            print("HTTP helper initialized: " .. ffi.string(http.sapp_http_version()))
         else
             print("HTTP helper init failed: " .. ret)
         end

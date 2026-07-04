@@ -50,8 +50,8 @@ local function print_response(resp)
     else
         print("  body        : (null)")
     end
-    print("  content_type: " .. (resp.content_type or "(null)"))
-    print("  error_msg   : " .. (resp.error_message or "(none)"))
+    print("  content_type: " .. ((resp.content_type and ffi.string(resp.content_type)) or "(null)"))
+    print("  error_msg   : " .. ((resp.error_message and ffi.string(resp.error_message)) or "(none)"))
 end
 
 api_version = "1.12.0.0"
@@ -64,7 +64,7 @@ function OnScriptLoad()
     end
 
     -- Print libcurl version for verification
-    print("libcurl version: " .. http.sapp_http_version())
+    print("libcurl version: " .. ffi.string(http.sapp_http_version()))
 
     -- Fetch text.txt from GitHub (raw URL)
     local url = "https://raw.githubusercontent.com/Chalwk/SAPP-HTTP/main/text.txt"
@@ -86,7 +86,7 @@ function OnScriptLoad()
     else
         print("\nERROR: Failed to fetch the file.")
         if resp.error_message ~= nil then
-            print("  curl error: " .. http.sapp_http_curl_strerror(resp.curl_code))
+            print("  curl error: " .. ffi.string(http.sapp_http_curl_strerror(resp.curl_code)))
         end
     end
 
