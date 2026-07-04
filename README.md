@@ -82,6 +82,19 @@ cmake --build build --config Release
 
 On success, the DLL is created at: `C:\dev\sapp-http\build\Release\sapp_http.dll`
 
+> **If you're using VS Code with the CMake Tools extension**, you may see a false error on `find_package(CURL)` because the extension does not automatically use the vcpkg toolchain. To fix this, create a `.vscode/settings.json` file in the project root with:
+>
+> ```json
+> {
+>     "cmake.configureArgs": [
+>         "-DCMAKE_TOOLCHAIN_FILE=C:/dev/vcpkg/scripts/buildsystems/vcpkg.cmake",
+>         "-DVCPKG_TARGET_TRIPLET=x86-windows-static"
+>     ]
+> }
+> ```
+>
+> Adjust the paths to match your own vcpkg installation. After saving, run `CMake: Configure` from the command palette to refresh the configuration.
+
 ---
 
 ## Verifying the build
