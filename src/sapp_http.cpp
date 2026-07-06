@@ -719,7 +719,7 @@ namespace
         return req;
     }
 
-} // namespace
+}
 
 // ------------------------------------------------------------------
 //  Exported synchronous C functions
@@ -992,5 +992,4 @@ extern "C"
 
         delete req_impl;
     }
-
-} // extern "C"
+}
