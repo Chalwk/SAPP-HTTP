@@ -119,7 +119,7 @@ extern "C"
         size_t header_count);
 
     // Process all pending asynchronous requests. Call this regularly (e.g. from a Lua timer).
-    // Returns the number of still‑active requests, or a negative error code.
+    // Returns the number of still-active requests, or a negative error code.
     SAPPHTTP_API int SAPPHTTP_CALL sapp_http_process(void);
 
     // Check if an asynchronous request has finished. Returns 1 if done, 0 if still in progress,
