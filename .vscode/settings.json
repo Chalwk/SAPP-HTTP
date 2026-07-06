@@ -2,6 +2,5 @@
     "cmake.configureArgs": [
         "-DCMAKE_TOOLCHAIN_FILE=C:/dev/vcpkg/scripts/buildsystems/vcpkg.cmake",
         "-DVCPKG_TARGET_TRIPLET=x86-windows-static"
-    ],
-    "cmake.buildConfig": "Release"
+    ]
 }
