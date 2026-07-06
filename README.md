@@ -166,8 +166,6 @@ Then:
 <details>
 <summary>Click to expand</summary>
 
-### Synchronous Examples
-
 Fetches a `plain text file` from GitHub.
 
 * [http_get_text.lua](/example_lua_scripts/http_get_text.lua)
@@ -208,46 +206,6 @@ For scripts that make multiple `HTTP` requests, you can create a reusable helper
 
 * [http_helper.lua](/example_lua_scripts/http_helper.lua)
 * [http_using_helper.lua](/example_lua_scripts/http_using_helper.lua)
-
-### Asynchronous Example
-
-Here's a minimal async GET request using a timer:
-
-```lua
-local ffi = require("ffi")
-local http = ffi.load("sapp_http")
-
--- Load the cdef automatically (or call sapp_http_get_cdef() once)
-ffi.cdef(http.sapp_http_get_cdef())
-
--- Initialise once at startup
-http.sapp_http_global_init()
-
--- Create a request (non‑blocking)
-local req = http.sapp_http_create_get("https://httpbin.org/get", nil, 0)
-
--- In a timer callback (e.g. every 100 ms):
-while http.sapp_http_request_is_done(req) == 0 do
-    http.sapp_http_process()
-    -- yield or sleep to avoid busy‑waiting
-    coroutine.yield()  -- if using a coroutine timer
-end
-
--- Retrieve the response
-local resp = ffi.new("sapp_http_response")
-local status = http.sapp_http_request_get_response(req, resp)
-if status == 0 then
-    print("Status:", resp.http_status)
-    print("Body:", ffi.string(resp.body, resp.body_size))
-    http.sapp_http_free_response(resp)
-else
-    print("Error:", resp.error_message)
-end
-
--- Clean up
-http.sapp_http_request_free(req)
-http.sapp_http_global_cleanup()
-```
 
 </details>
 
