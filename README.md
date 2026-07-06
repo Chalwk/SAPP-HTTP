@@ -31,10 +31,10 @@ See [`sapp_http.h`](src/sapp_http.h) for the complete API.
 ## Requirements
 
 * **Visual Studio Build Tools 2022** (or later) with the **Desktop development with C++** workload
-    * MSVC v143
-    * Windows 10/11 SDK
-    * CMake tools
-    * vcpkg
+  * MSVC v143
+  * Windows 10/11 SDK
+  * CMake tools
+  * vcpkg
 * **CMake** 3.21 or later
 
 ---
@@ -121,41 +121,51 @@ Then, from your Lua scripts, use `ffi.load("sapp_http")` and call the API.
 
 ---
 
-## Example Lua scripts:
+## Example Lua scripts
 
 <details>
 <summary>Click to expand</summary>
 
 Fetches a `plain text file` from GitHub.
-- [http_get_text.lua](/example_lua_scripts/http_get_text.lua)
+
+* [http_get_text.lua](/example_lua_scripts/http_get_text.lua)
 
 Adds a custom `User-Agent` and `X-Custom-Header` to the request.
-- [http_get_with_headers.lua](/example_lua_scripts/http_get_with_headers.lua)
+
+* [http_get_with_headers.lua](/example_lua_scripts/http_get_with_headers.lua)
 
 Sends a `JSON` payload to an API endpoint and reads the response.
-- [http_post_json.lua](/example_lua_scripts/http_post_json.lua)
+
+* [http_post_json.lua](/example_lua_scripts/http_post_json.lua)
 
 Sends `application/x-www-form-urlencoded` data (like a HTML form submission).
-- [http_post_form.lua](/example_lua_scripts/http_post_form.lua)
+
+* [http_post_form.lua](/example_lua_scripts/http_post_form.lua)
 
 Combines a `POST` request with additional headers.
-- [http_post_with_headers.lua](/example_lua_scripts/http_post_with_headers.lua)
+
+* [http_post_with_headers.lua](/example_lua_scripts/http_post_with_headers.lua)
 
 Demonstrates updating a resource with a `PUT` request.
-- [http_put.lua](/example_lua_scripts/http_put.lua)
+
+* [http_put.lua](/example_lua_scripts/http_put.lua)
 
 Shows how to handle various error conditions gracefully.
-- [http_error_handling.lua](/example_lua_scripts/http_http_error_handlingput.lua)
+
+* [http_error_handling.lua](/example_lua_scripts/http_http_error_handlingput.lua)
 
 Fetches `JSON` data and demonstrates basic string manipulation to extract values.
-- [http_get_json_parse.lua](/example_lua_scripts/http_get_json_parse.lua)
+
+* [http_get_json_parse.lua](/example_lua_scripts/http_get_json_parse.lua)
 
 Sends a message to a `Discord webhook` (replace the URL with your own).
-- [http_discord_webhook.lua](/example_lua_scripts/http_discord_webhook.lua)
+
+* [http_discord_webhook.lua](/example_lua_scripts/http_discord_webhook.lua)
 
 For scripts that make multiple `HTTP` requests, you can create a reusable helper module.
-- [http_helper.lua](/example_lua_scripts/http_helper.lua)
-- [http_using_helper.lua](/example_lua_scripts/http_using_helper.lua)
+
+* [http_helper.lua](/example_lua_scripts/http_helper.lua)
+* [http_using_helper.lua](/example_lua_scripts/http_using_helper.lua)
 
 </details>
 

@@ -19,6 +19,8 @@ typedef struct sapp_http_response {
     char *error_message;
 } sapp_http_response;
 
+typedef struct sapp_http_request sapp_http_request;
+
 enum sapp_http_status {
     SAPPHTTP_OK = 0,
     SAPPHTTP_E_INVALID_ARGUMENT = -1,
@@ -30,13 +32,15 @@ enum sapp_http_status {
 int sapp_http_global_init(void);
 void sapp_http_global_cleanup(void);
 
-int sapp_http_get(const char *url,
-                  const sapp_http_header *headers,
-                  size_t header_count,
-                  sapp_http_response *out_response);
-
+sapp_http_request* sapp_http_create_get(const char *url,
+                                        const sapp_http_header *headers,
+                                        size_t header_count);
+int sapp_http_process(void);
+int sapp_http_request_is_done(sapp_http_request *req);
+int sapp_http_request_get_response(sapp_http_request *req,
+                                   sapp_http_response *out);
+void sapp_http_request_free(sapp_http_request *req);
 void sapp_http_free_response(sapp_http_response *response);
-
 const char *sapp_http_version(void);
 const char *sapp_http_curl_strerror(int curl_code);
 ]]
@@ -65,6 +69,9 @@ end
 
 api_version = "1.12.0.0"
 
+local url = "https://raw.githubusercontent.com/Chalwk/SAPP-HTTP/main/test.txt"
+local request_handle = nil
+
 function OnScriptLoad()
     local init_ret = http.sapp_http_global_init() -- start up cURL
     if init_ret ~= 0 then
@@ -75,33 +82,54 @@ function OnScriptLoad()
     -- Print libcurl version for verification
     print("libcurl version: " .. ffi.string(http.sapp_http_version()))
 
-    -- Fetch test.txt from GitHub (raw URL)
-    local url = "https://raw.githubusercontent.com/Chalwk/SAPP-HTTP/main/test.txt"
-    local resp = ffi.new("sapp_http_response")
-
     print("\n--- GET request to: " .. url .. " ---")
-    local ret = http.sapp_http_get(url, nil, 0, resp) -- fire off a GET request
-    print("sapp_http_get returned: " .. ret)
-    print_response(resp)
-
-    -- Check if the request succeeded and the content matches
-    if ret == 0 and resp.curl_code == 0 and resp.body ~= nil and resp.body ~= ffi.NULL then
-        local content = ffi.string(resp.body, resp.body_size)
-        if content == "success!" then
-            print("\nSUCCESS: Retrieved 'success!' as expected.")
-        else
-            print("\nWARNING: Unexpected content: " .. content)
-        end
-    else
-        print("\nERROR: Failed to fetch the file.")
-        if resp.error_message ~= nil and resp.error_message ~= ffi.NULL then
-            print("  curl error: " .. ffi.string(http.sapp_http_curl_strerror(resp.curl_code)))
-        end
+    request_handle = http.sapp_http_create_get(url, nil, 0)
+    if request_handle == nil then
+        print("ERROR: Failed to create GET request")
+        return
     end
+    timer(100, "CheckText")
+end
 
-    http.sapp_http_free_response(resp) -- free the response memory
+function CheckText()
+    if request_handle == nil then return end
+
+    http.sapp_http_process()
+
+    if http.sapp_http_request_is_done(request_handle) == 1 then
+        local resp = ffi.new("sapp_http_response")
+        local ret = http.sapp_http_request_get_response(request_handle, resp)
+        http.sapp_http_request_free(request_handle)
+        request_handle = nil
+
+        print("sapp_http_get returned: " .. ret)
+        print_response(resp)
+
+        -- Check if the request succeeded and the content matches
+        if ret == 0 and resp.curl_code == 0 and resp.body ~= nil and resp.body ~= ffi.NULL then
+            local content = ffi.string(resp.body, resp.body_size)
+            if content == "success!" then
+                print("\nSUCCESS: Retrieved 'success!' as expected.")
+            else
+                print("\nWARNING: Unexpected content: " .. content)
+            end
+        else
+            print("\nERROR: Failed to fetch the file.")
+            if resp.error_message ~= nil and resp.error_message ~= ffi.NULL then
+                print("  curl error: " .. ffi.string(http.sapp_http_curl_strerror(resp.curl_code)))
+            end
+        end
+
+        http.sapp_http_free_response(resp) -- free the response memory
+    else
+        timer(100, "CheckText")
+    end
 end
 
 function OnScriptUnload()
+    if request_handle then
+        http.sapp_http_request_free(request_handle)
+        request_handle = nil
+    end
     http.sapp_http_global_cleanup() -- shut down cURL
 end

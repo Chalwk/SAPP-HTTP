@@ -8,3 +8,10 @@ EXPORTS
     sapp_http_free_response
     sapp_http_version
     sapp_http_curl_strerror
+    sapp_http_create_get
+    sapp_http_create_post
+    sapp_http_create_put
+    sapp_http_process
+    sapp_http_request_is_done
+    sapp_http_request_get_response
+    sapp_http_request_free
