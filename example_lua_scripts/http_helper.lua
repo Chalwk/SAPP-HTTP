@@ -5,7 +5,8 @@
 local ffi = require("ffi")
 local http = ffi.load("sapp_http")
 
-ffi.cdef([[
+ffi.cdef(
+    [[
     typedef struct sapp_http_header {
         const char *name;
         const char *value;
@@ -27,26 +28,6 @@ ffi.cdef([[
     const char *sapp_http_version(void);
     const char *sapp_http_curl_strerror(int curl_code);
 
-    int sapp_http_get(const char *url,
-                      const sapp_http_header *headers,
-                      size_t header_count,
-                      sapp_http_response *out);
-    int sapp_http_post(const char *url,
-                       const char *content_type,
-                       const char *body,
-                       size_t body_size,
-                       const sapp_http_header *headers,
-                       size_t header_count,
-                       sapp_http_response *out);
-    int sapp_http_put(const char *url,
-                      const char *content_type,
-                      const char *body,
-                      size_t body_size,
-                      const sapp_http_header *headers,
-                      size_t header_count,
-                      sapp_http_response *out);
-    void sapp_http_free_response(sapp_http_response *response);
-
     sapp_http_request* sapp_http_create_get(const char *url,
                                             const sapp_http_header *headers,
                                             size_t header_count);
@@ -67,10 +48,11 @@ ffi.cdef([[
     int sapp_http_request_get_response(sapp_http_request *req,
                                        sapp_http_response *out);
     void sapp_http_request_free(sapp_http_request *req);
-]])
+    void sapp_http_free_response(sapp_http_response *response);
+]]
+)
 
 local M = {}
-
 local initialized = false
 
 function M.init()
@@ -93,66 +75,54 @@ function M.cleanup()
     end
 end
 
+-- GET: returns request handle (or nil)
 function M.get(url, headers)
-    local resp = ffi.new("sapp_http_response")
-    local header_count = headers and #headers or 0
-    local ret = http.sapp_http_get(url, headers, header_count, resp)
-    return ret, resp
-end
-
-function M.post(url, content_type, body, headers)
-    local resp = ffi.new("sapp_http_response")
-    local header_count = headers and #headers or 0
-    local ret = http.sapp_http_post(url, content_type, body, #body, headers, header_count, resp)
-    return ret, resp
-end
-
-function M.put(url, content_type, body, headers)
-    local resp = ffi.new("sapp_http_response")
-    local header_count = headers and #headers or 0
-    local ret = http.sapp_http_put(url, content_type, body, #body, headers, header_count, resp)
-    return ret, resp
-end
-
-function M.free(resp)
-    http.sapp_http_free_response(resp)
-end
-
-function M.curl_strerror(code)
-    return http.sapp_http_curl_strerror(code)
-end
-
-function M.create_get(url, headers)
     local header_count = headers and #headers or 0
     return http.sapp_http_create_get(url, headers, header_count)
 end
 
-function M.create_post(url, content_type, body, headers)
+-- POST: returns request handle (or nil)
+function M.post(url, content_type, body, headers)
     local header_count = headers and #headers or 0
     return http.sapp_http_create_post(url, content_type, body, #body, headers, header_count)
 end
 
-function M.create_put(url, content_type, body, headers)
+-- PUT: returns request handle (or nil)
+function M.put(url, content_type, body, headers)
     local header_count = headers and #headers or 0
     return http.sapp_http_create_put(url, content_type, body, #body, headers, header_count)
 end
 
+-- Drive pending transfers
 function M.process()
     return http.sapp_http_process()
 end
 
+-- Check completion
 function M.is_done(req)
     return http.sapp_http_request_is_done(req)
 end
 
+-- Retrieve response (returns ret code and response struct)
 function M.get_response(req)
     local resp = ffi.new("sapp_http_response")
     local ret = http.sapp_http_request_get_response(req, resp)
     return ret, resp
 end
 
+-- Free request handle
 function M.free_request(req)
     http.sapp_http_request_free(req)
+end
+
+-- Free response struct
+function M.free(resp)
+    http.sapp_http_free_response(resp)
+end
+
+-- Utility
+function M.curl_strerror(code)
+    return http.sapp_http_curl_strerror(code)
 end
 
 return M

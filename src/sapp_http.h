@@ -58,40 +58,15 @@ extern "C"
     typedef struct sapp_http_request sapp_http_request;
 
     // ------------------------------------------------------------------
-    //  Synchronous API
+    //  Global initialisation / cleanup
     // ------------------------------------------------------------------
 
     SAPPHTTP_API int SAPPHTTP_CALL sapp_http_global_init(void);
     SAPPHTTP_API void SAPPHTTP_CALL sapp_http_global_cleanup(void);
 
-    SAPPHTTP_API int SAPPHTTP_CALL sapp_http_get(
-        const char *url,
-        const sapp_http_header *headers,
-        size_t header_count,
-        sapp_http_response *out_response);
-
-    SAPPHTTP_API int SAPPHTTP_CALL sapp_http_post(
-        const char *url,
-        const char *content_type,
-        const char *body,
-        size_t body_size,
-        const sapp_http_header *headers,
-        size_t header_count,
-        sapp_http_response *out_response);
-
-    SAPPHTTP_API int SAPPHTTP_CALL sapp_http_put(
-        const char *url,
-        const char *content_type,
-        const char *body,
-        size_t body_size,
-        const sapp_http_header *headers,
-        size_t header_count,
-        sapp_http_response *out_response);
-
-    SAPPHTTP_API void SAPPHTTP_CALL sapp_http_free_response(sapp_http_response *response);
-
-    SAPPHTTP_API const char *SAPPHTTP_CALL sapp_http_version(void);
-    SAPPHTTP_API const char *SAPPHTTP_CALL sapp_http_curl_strerror(int curl_code);
+    // ------------------------------------------------------------------
+    //  Asynchronous (non‑blocking) API
+    // ------------------------------------------------------------------
 
     // Create a new asynchronous GET request. Returns an opaque handle,
     // or NULL on failure. The request is added to the internal multi handle.
@@ -136,6 +111,14 @@ extern "C"
     // Free all resources associated with an asynchronous request.
     // Safe to call even if the request is still active (it will be removed first).
     SAPPHTTP_API void SAPPHTTP_CALL sapp_http_request_free(sapp_http_request *req);
+
+    // ------------------------------------------------------------------
+    //  Utilities
+    // ------------------------------------------------------------------
+
+    SAPPHTTP_API void SAPPHTTP_CALL sapp_http_free_response(sapp_http_response *response);
+    SAPPHTTP_API const char *SAPPHTTP_CALL sapp_http_version(void);
+    SAPPHTTP_API const char *SAPPHTTP_CALL sapp_http_curl_strerror(int curl_code);
 
 #ifdef __cplusplus
 }

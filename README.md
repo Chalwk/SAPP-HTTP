@@ -1,8 +1,8 @@
-# SAPP HTTP Client DLL
+# SAPP HTTP Client DLL (Asynchronous Only)
 
-A lightweight HTTP/HTTPS client DLL for SAPP that exposes a C API through LuaJIT FFI, allowing Lua scripts to perform HTTP(S) GET, POST, and PUT requests using **libcurl**.
+A lightweight, HTTP/HTTPS client DLL for SAPP that exposes a C API through LuaJIT FFI, allowing Lua scripts to perform HTTP(S) GET, POST, and PUT requests using **libcurl**.
 
-Supports both **synchronous** (blocking) and **asynchronous** (non‑blocking) requests.
+All requests are **asynchronous** - they never block the main thread. You must periodically call `sapp_http_process()` to drive the transfers and check completion with `sapp_http_request_is_done()`.
 
 [![Version][version-badge]][version-link]
 [![License: MIT][license-badge]][license-link]
@@ -16,9 +16,8 @@ Supports both **synchronous** (blocking) and **asynchronous** (non‑blocking) r
 **Exported functions:**
 
 * **Global** - `sapp_http_global_init`, `sapp_http_global_cleanup`
-* **Synchronous** - `sapp_http_get`, `sapp_http_post`, `sapp_http_put`, `sapp_http_free_response`
 * **Asynchronous** - `sapp_http_create_get`, `sapp_http_create_post`, `sapp_http_create_put`, `sapp_http_process`, `sapp_http_request_is_done`, `sapp_http_request_get_response`, `sapp_http_request_free`
-* **Utilities** - `sapp_http_version`, `sapp_http_curl_strerror`
+* **Utilities** - `sapp_http_free_response`, `sapp_http_version`, `sapp_http_curl_strerror`
 
 See [`sapp_http.h`](src/sapp_http.h) for the complete API.
 
@@ -47,7 +46,7 @@ cd C:\dev\vcpkg
 bootstrap-vcpkg.bat
 ```
 
-### 2. Install libcurl (static 32‑bit)
+### 2. Install libcurl (static 32-bit)
 
 ```cmd
 C:\dev\vcpkg\vcpkg.exe install curl:x86-windows-static
@@ -78,7 +77,7 @@ cmake --build build --config Release
 
 On success, the DLL is created at: `C:\dev\sapp-http\build\Release\sapp_http.dll`
 
-Alternatively, run the convenience script: `builld.bat`
+Alternatively, run the convenience script: `build.bat`
 
 ---
 
@@ -89,53 +88,60 @@ Then, from your Lua scripts, use `ffi.load("sapp_http")` and call the API.
 
 ---
 
-## Example Lua scripts
+## Example Lua Script (Async GET)
 
-<details>
-<summary>Click to expand</summary>
+```lua
+local ffi = require("ffi")
+local http = ffi.load("sapp_http")
 
-Fetches a `plain text file` from GitHub.
+-- Load the header definitions (see sapp_http.h)
+ffi.cdef[[
+    typedef struct { const char *name; const char *value; } sapp_http_header;
+    typedef struct { int curl_code; long http_status; size_t body_size; char *body; char *content_type; char *error_message; } sapp_http_response;
+    typedef struct sapp_http_request sapp_http_request;
+    int sapp_http_global_init(void);
+    sapp_http_request* sapp_http_create_get(const char *url, const sapp_http_header *headers, size_t header_count);
+    int sapp_http_process(void);
+    int sapp_http_request_is_done(sapp_http_request *req);
+    int sapp_http_request_get_response(sapp_http_request *req, sapp_http_response *out);
+    void sapp_http_request_free(sapp_http_request *req);
+    void sapp_http_free_response(sapp_http_response *resp);
+    void sapp_http_global_cleanup(void);
+]]
 
-* [http_get_text.lua](/example_lua_scripts/http_get_text.lua)
+-- Initialise once at startup
+http.sapp_http_global_init()
 
-Adds a custom `User-Agent` and `X-Custom-Header` to the request.
+-- Create a GET request
+local req = http.sapp_http_create_get("https://httpbin.org/get", nil, 0)
+if req == nil then
+    print("Failed to create request")
+    os.exit(1)
+end
 
-* [http_get_with_headers.lua](/example_lua_scripts/http_get_with_headers.lua)
+-- Poll until complete
+while http.sapp_http_request_is_done(req) == 0 do
+    http.sapp_http_process()
+    -- Yield to other Lua tasks if needed (e.g. coroutine.yield())
+end
 
-Sends a `JSON` payload to an API endpoint and reads the response.
+-- Retrieve the response
+local resp = ffi.new("sapp_http_response")
+local status = http.sapp_http_request_get_response(req, resp)
+if status == 0 then
+    print("Status: " .. resp.http_status)
+    print("Body: " .. ffi.string(resp.body, resp.body_size))
+    http.sapp_http_free_response(resp)
+else
+    print("Error: " .. status)
+end
 
-* [http_post_json.lua](/example_lua_scripts/http_post_json.lua)
+-- Clean up
+http.sapp_http_request_free(req)
+http.sapp_http_global_cleanup()
+```
 
-Sends `application/x-www-form-urlencoded` data (like a HTML form submission).
-
-* [http_post_form.lua](/example_lua_scripts/http_post_form.lua)
-
-Combines a `POST` request with additional headers.
-
-* [http_post_with_headers.lua](/example_lua_scripts/http_post_with_headers.lua)
-
-Demonstrates updating a resource with a `PUT` request.
-
-* [http_put.lua](/example_lua_scripts/http_put.lua)
-
-Shows how to handle various error conditions gracefully.
-
-* [http_error_handling.lua](/example_lua_scripts/http_http_error_handling.lua)
-
-Fetches `JSON` data and demonstrates basic string manipulation to extract values.
-
-* [http_get_json_parse.lua](/example_lua_scripts/http_get_json_parse.lua)
-
-Sends a message to a `Discord webhook` (replace the URL with your own).
-
-* [http_discord_webhook.lua](/example_lua_scripts/http_discord_webhook.lua)
-
-For scripts that make multiple `HTTP` requests, you can create a reusable helper module.
-
-* [http_helper.lua](/example_lua_scripts/http_helper.lua)
-* [http_using_helper.lua](/example_lua_scripts/http_using_helper.lua)
-
-</details>
+For more advanced, SAPP-specific examples (custom headers, POST/PUT, JSON handling, error handling, etc.), see the [`example_lua_scripts`](/example_lua_scripts) folder.
 
 ---
 

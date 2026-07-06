@@ -171,21 +171,6 @@ namespace
         r->curl_code = SAPPHTTP_OK;
     }
 
-    // Sets error fields in response and returns the given error code.
-    static int set_wrapper_error(sapp_http_response *out, int code, const char *message)
-    {
-        if (out)
-        {
-            out->curl_code = code;
-            out->http_status = 0;
-            out->body_size = 0;
-            out->body = nullptr;
-            out->content_type = nullptr;
-            out->error_message = dup_cstr(message);
-        }
-        return code;
-    }
-
     // ------------------------------------------------------------------
     //  libcurl write callback
     // ------------------------------------------------------------------
@@ -287,15 +272,8 @@ namespace
     }
 
     // ------------------------------------------------------------------
-    //  Core request function - handles GET, POST, PUT
+    //  Common option setup for async requests
     // ------------------------------------------------------------------
-
-    enum class HttpMethod
-    {
-        GET,
-        POST,
-        PUT
-    };
 
     static bool set_common_options(CURL *easy, const char *url, curl_slist *headers,
                                    memory_buffer *resp_buf, char *error_buffer)
@@ -383,160 +361,15 @@ namespace
     }
 
     // ------------------------------------------------------------------
-    //  Core synchronous request
-    // ------------------------------------------------------------------
-
-    static int do_request(HttpMethod method,
-                          const char *url,
-                          const char *content_type,
-                          const char *body,
-                          size_t body_size,
-                          const sapp_http_header *headers,
-                          size_t header_count,
-                          sapp_http_response *out_response)
-    {
-        if (!url || !*url || !out_response)
-            return set_wrapper_error(out_response, SAPPHTTP_E_INVALID_ARGUMENT, "invalid argument");
-
-        clear_response(out_response);
-
-        {
-            std::lock_guard<std::mutex> lock(g_init_mutex);
-            if (!g_initialized)
-            {
-                CURLcode code = curl_global_init(CURL_GLOBAL_DEFAULT);
-                if (code != CURLE_OK)
-                    return set_wrapper_error(out_response, SAPPHTTP_E_CURL_INIT_FAILED,
-                                             "curl_global_init failed");
-                g_initialized = true;
-            }
-        }
-
-        curl_slist_holder resolve_list;
-        curl_slist_holder header_list;
-        curl_handle curl;
-        if (!curl)
-            return set_wrapper_error(out_response, SAPPHTTP_E_CURL_INIT_FAILED,
-                                     "curl_easy_init failed");
-
-        // DNS-over-HTTPS fallback
-        std::string hostname;
-        const char *host_start = strstr(url, "://");
-        if (host_start)
-        {
-            host_start += 3;
-            const char *host_end = strchr(host_start, '/');
-            if (!host_end)
-                host_end = host_start + std::strlen(host_start);
-            hostname = std::string(host_start, host_end - host_start);
-        }
-        size_t colon_pos = hostname.find(':');
-        if (colon_pos != std::string::npos)
-            hostname = hostname.substr(0, colon_pos);
-
-        if (!hostname.empty() && !std::isdigit(hostname[0]))
-        {
-            curl_slist *resolve = build_resolve_list(url, hostname);
-            if (resolve)
-            {
-                resolve_list = curl_slist_holder(resolve); // move assignment
-                curl_easy_setopt(curl.get(), CURLOPT_RESOLVE, resolve_list.get());
-            }
-        }
-
-        // Build headers
-        if (content_type && *content_type)
-        {
-            std::string ct = "Content-Type: ";
-            ct += content_type;
-            header_list.append(ct);
-        }
-        for (size_t i = 0; i < header_count; ++i)
-        {
-            const char *name = headers[i].name;
-            const char *value = headers[i].value;
-            if (!name || !*name || !value)
-                continue;
-            std::string line = name;
-            line += ": ";
-            line += value;
-            header_list.append(line);
-        }
-
-        memory_buffer resp_body;
-        char error_buffer[CURL_ERROR_SIZE] = {0};
-
-        if (!set_common_options(curl.get(), url, header_list.get(), &resp_body, error_buffer))
-        {
-            const char *msg = error_buffer[0] ? error_buffer : "failed to set libcurl options";
-            return set_wrapper_error(out_response, SAPPHTTP_E_CURL_OPTION_FAILED, msg);
-        }
-
-        // Method-specific
-        CURLcode code = CURLE_OK;
-        switch (method)
-        {
-        case HttpMethod::GET:
-            break;
-        case HttpMethod::POST:
-            code = curl_easy_setopt(curl.get(), CURLOPT_POST, 1L);
-            if (code == CURLE_OK)
-                code = curl_easy_setopt(curl.get(), CURLOPT_POSTFIELDS, body ? body : "");
-            if (code == CURLE_OK)
-                code = curl_easy_setopt(curl.get(), CURLOPT_POSTFIELDSIZE_LARGE,
-                                        static_cast<curl_off_t>(body_size));
-            break;
-        case HttpMethod::PUT:
-            code = curl_easy_setopt(curl.get(), CURLOPT_CUSTOMREQUEST, "PUT");
-            if (code == CURLE_OK)
-                code = curl_easy_setopt(curl.get(), CURLOPT_POSTFIELDS, body ? body : "");
-            if (code == CURLE_OK)
-                code = curl_easy_setopt(curl.get(), CURLOPT_POSTFIELDSIZE_LARGE,
-                                        static_cast<curl_off_t>(body_size));
-            break;
-        }
-        if (code != CURLE_OK)
-        {
-            const char *msg = error_buffer[0] ? error_buffer : "failed to set method options";
-            return set_wrapper_error(out_response, SAPPHTTP_E_CURL_OPTION_FAILED, msg);
-        }
-
-        CURLcode res = curl_easy_perform(curl.get());
-
-        long status = 0;
-        const char *ct = nullptr;
-        curl_easy_getinfo(curl.get(), CURLINFO_RESPONSE_CODE, &status);
-        curl_easy_getinfo(curl.get(), CURLINFO_CONTENT_TYPE, &ct);
-
-        out_response->curl_code = static_cast<int>(res);
-        out_response->http_status = status;
-        out_response->body_size = resp_body.size;
-        out_response->body = resp_body.data;
-        resp_body.data = nullptr;
-        out_response->content_type = dup_cstr(ct);
-        if (res != CURLE_OK)
-        {
-            const char *msg = error_buffer[0] ? error_buffer : curl_easy_strerror(res);
-            out_response->error_message = dup_cstr(msg);
-        }
-
-        if (out_response->body == nullptr && out_response->body_size != 0)
-        {
-            free_response_members(out_response);
-            return set_wrapper_error(out_response, SAPPHTTP_E_OUT_OF_MEMORY, "failed to capture body");
-        }
-        if (out_response->content_type == nullptr && ct != nullptr)
-        {
-            free_response_members(out_response);
-            return set_wrapper_error(out_response, SAPPHTTP_E_OUT_OF_MEMORY, "failed to copy content type");
-        }
-
-        return SAPPHTTP_OK;
-    }
-
-    // ------------------------------------------------------------------
     //  Asynchronous request internals
     // ------------------------------------------------------------------
+
+    enum class HttpMethod
+    {
+        GET,
+        POST,
+        PUT
+    };
 
     struct AsyncRequest
     {
@@ -722,7 +555,7 @@ namespace
 }
 
 // ------------------------------------------------------------------
-//  Exported synchronous C functions
+//  Exported C functions
 // ------------------------------------------------------------------
 
 extern "C"
@@ -785,36 +618,6 @@ extern "C"
         g_initialized = false;
     }
 
-    int SAPPHTTP_CALL sapp_http_get(const char *url,
-                                    const sapp_http_header *headers,
-                                    size_t header_count,
-                                    sapp_http_response *out_response)
-    {
-        return do_request(HttpMethod::GET, url, nullptr, nullptr, 0, headers, header_count, out_response);
-    }
-
-    int SAPPHTTP_CALL sapp_http_post(const char *url,
-                                     const char *content_type,
-                                     const char *body,
-                                     size_t body_size,
-                                     const sapp_http_header *headers,
-                                     size_t header_count,
-                                     sapp_http_response *out_response)
-    {
-        return do_request(HttpMethod::POST, url, content_type, body, body_size, headers, header_count, out_response);
-    }
-
-    int SAPPHTTP_CALL sapp_http_put(const char *url,
-                                    const char *content_type,
-                                    const char *body,
-                                    size_t body_size,
-                                    const sapp_http_header *headers,
-                                    size_t header_count,
-                                    sapp_http_response *out_response)
-    {
-        return do_request(HttpMethod::PUT, url, content_type, body, body_size, headers, header_count, out_response);
-    }
-
     void SAPPHTTP_CALL sapp_http_free_response(sapp_http_response *response)
     {
         free_response_members(response);
@@ -831,7 +634,7 @@ extern "C"
     }
 
     // ------------------------------------------------------------------
-    //  Exported asynchronous C functions
+    //  Asynchronous API
     // ------------------------------------------------------------------
 
     SAPPHTTP_API sapp_http_request *SAPPHTTP_CALL sapp_http_create_get(
