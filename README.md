@@ -3,8 +3,7 @@
 A lightweight HTTP/HTTPS client DLL for SAPP that exposes a C API through LuaJIT
 FFI, allowing Lua scripts to perform HTTP(S) GET, POST, and PUT requests using **libcurl**.
 
-Supports both **synchronous** (blocking) and **asynchronous** (non‑blocking) requests,
-making it suitable for use in event‑driven servers like SAPP.
+Supports both **synchronous** (blocking) and **asynchronous** (non‑blocking) requests.
 
 Built with **MSVC**, **CMake**, and **vcpkg**.
 
@@ -102,18 +101,6 @@ On success, the DLL is created at: `C:\dev\sapp-http\build\Release\sapp_http.dll
 
 ---
 
-## Verifying the build
-
-To confirm that all symbols are exported correctly:
-
-```cmd
-dumpbin /exports build\Release\sapp_http.dll
-```
-
-You should see the list of exported functions.
-
----
-
 ## Deploying
 
 Copy `sapp_http.dll` into the same folder as `sapp.dll` (the SAPP server binary).  
@@ -142,7 +129,7 @@ The response is filled in a `sapp_http_response` structure. Always call `sapp_ht
 
 For non‑blocking behaviour, create a request handle, then periodically call `sapp_http_process()` (e.g. from a timer) to drive the transfers. When the request is done, retrieve the response and free the handle.
 
-* `sapp_http_create_get(url, headers, header_count)` → returns a `sapp_http_request*` handle
+* `sapp_http_create_get(url, headers, header_count)` - returns a `sapp_http_request*` handle
 * `sapp_http_create_post(url, content_type, body, body_size, headers, header_count)`
 * `sapp_http_create_put(url, content_type, body, body_size, headers, header_count)`
 
