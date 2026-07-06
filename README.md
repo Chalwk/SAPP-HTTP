@@ -120,7 +120,7 @@ Demonstrates updating a resource with a `PUT` request.
 
 Shows how to handle various error conditions gracefully.
 
-* [http_error_handling.lua](/example_lua_scripts/http_http_error_handling.lua)  *(link fixed)*
+* [http_error_handling.lua](/example_lua_scripts/http_http_error_handling.lua)
 
 Fetches `JSON` data and demonstrates basic string manipulation to extract values.
 
