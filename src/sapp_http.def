@@ -15,3 +15,4 @@ EXPORTS
     sapp_http_request_is_done
     sapp_http_request_get_response
     sapp_http_request_free
+    sapp_http_get_cdef

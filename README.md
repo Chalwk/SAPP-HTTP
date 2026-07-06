@@ -3,6 +3,9 @@
 A lightweight HTTP/HTTPS client DLL for SAPP that exposes a C API through LuaJIT
 FFI, allowing Lua scripts to perform HTTP(S) GET, POST, and PUT requests using **libcurl**.
 
+Supports both **synchronous** (blocking) and **asynchronous** (non‑blocking) requests,
+making it suitable for use in event‑driven servers like SAPP.
+
 Built with **MSVC**, **CMake**, and **vcpkg**.
 
 [![Version][version-badge]][version-link]
@@ -16,13 +19,10 @@ Built with **MSVC**, **CMake**, and **vcpkg**.
 
 **Exported functions:**
 
-* `sapp_http_global_init` / `sapp_http_global_cleanup`
-* `sapp_http_get`
-* `sapp_http_post`
-* `sapp_http_put`
-* `sapp_http_free_response`
-* `sapp_http_version`
-* `sapp_http_curl_strerror`
+* **Global** - `sapp_http_global_init`, `sapp_http_global_cleanup`
+* **Synchronous** - `sapp_http_get`, `sapp_http_post`, `sapp_http_put`, `sapp_http_free_response`
+* **Asynchronous** - `sapp_http_create_get`, `sapp_http_create_post`, `sapp_http_create_put`, `sapp_http_process`, `sapp_http_request_is_done`, `sapp_http_request_get_response`, `sapp_http_request_free`
+* **Utilities** - `sapp_http_version`, `sapp_http_curl_strerror`, `sapp_http_get_cdef`
 
 See [`sapp_http.h`](src/sapp_http.h) for the complete API.
 
@@ -51,7 +51,7 @@ cd C:\dev\vcpkg
 bootstrap-vcpkg.bat
 ```
 
-### 2. Install libcurl (static 32-bit)
+### 2. Install libcurl (static 32‑bit)
 
 ```cmd
 C:\dev\vcpkg\vcpkg.exe install curl:x86-windows-static
@@ -98,7 +98,7 @@ On success, the DLL is created at: `C:\dev\sapp-http\build\Release\sapp_http.dll
 > **Important: As Halo is a 32-bit application, the architecture in your CMake Tools settings must match the vcpkg triplet.**  
 > For the default triplet `x86-windows-static`, you need a 32-bit (Win32) build target. To enforce this:
 >
-> **Select the right kit** - Press `Ctrl+Shift+P`, choose `CMake: Select Kit`, and pick a kit that targets **x86** (e.g., `VS Build Tools ... - amd64_x86` or `VS Build Tools ... - x86`).  
+> **Select the right kit** - Press `Ctrl+Shift+P`, choose `CMake: Select Kit`, and pick a kit that targets **x86** (e.g., `VS Build Tools ... - amd64_x86` or `VS Build Tools ... - x86`).
 
 ---
 
@@ -121,10 +121,52 @@ Then, from your Lua scripts, use `ffi.load("sapp_http")` and call the API.
 
 ---
 
+## API Overview
+
+### Initialisation & Cleanup
+
+Before using any HTTP functions, call `sapp_http_global_init()` once (e.g. at server start).  
+At shutdown, call `sapp_http_global_cleanup()` to release all resources.
+
+### Synchronous Requests (Blocking)
+
+Use these functions when you want a simple, blocking call - they return only when the request completes.
+
+* `sapp_http_get(url, headers, header_count, out_response)`
+* `sapp_http_post(url, content_type, body, body_size, headers, header_count, out_response)`
+* `sapp_http_put(url, content_type, body, body_size, headers, header_count, out_response)`
+
+The response is filled in a `sapp_http_response` structure. Always call `sapp_http_free_response()` to free the memory.
+
+### Asynchronous Requests (Non‑Blocking)
+
+For non‑blocking behaviour, create a request handle, then periodically call `sapp_http_process()` (e.g. from a timer) to drive the transfers. When the request is done, retrieve the response and free the handle.
+
+* `sapp_http_create_get(url, headers, header_count)` → returns a `sapp_http_request*` handle
+* `sapp_http_create_post(url, content_type, body, body_size, headers, header_count)`
+* `sapp_http_create_put(url, content_type, body, body_size, headers, header_count)`
+
+Then:
+
+* `sapp_http_process()` - processes pending transfers; returns the number of still‑active requests
+* `sapp_http_request_is_done(req)` - returns 1 if finished, 0 otherwise
+* `sapp_http_request_get_response(req, out_response)` - copies the response into `out_response` (remember to free it later with `sapp_http_free_response`)
+* `sapp_http_request_free(req)` - frees all resources associated with the handle (safe to call even if still active)
+
+### Utility Functions
+
+* `sapp_http_version()` - returns the libcurl version string
+* `sapp_http_curl_strerror(curl_code)` - returns a human‑readable error message for a CURLcode
+* `sapp_http_get_cdef()` - returns the full `ffi.cdef` declaration as a C string, saving you from typing it manually in Lua
+
+---
+
 ## Example Lua scripts
 
 <details>
 <summary>Click to expand</summary>
+
+### Synchronous Examples
 
 Fetches a `plain text file` from GitHub.
 
@@ -152,7 +194,7 @@ Demonstrates updating a resource with a `PUT` request.
 
 Shows how to handle various error conditions gracefully.
 
-* [http_error_handling.lua](/example_lua_scripts/http_http_error_handlingput.lua)
+* [http_error_handling.lua](/example_lua_scripts/http_http_error_handling.lua)  *(link fixed)*
 
 Fetches `JSON` data and demonstrates basic string manipulation to extract values.
 
@@ -166,6 +208,46 @@ For scripts that make multiple `HTTP` requests, you can create a reusable helper
 
 * [http_helper.lua](/example_lua_scripts/http_helper.lua)
 * [http_using_helper.lua](/example_lua_scripts/http_using_helper.lua)
+
+### Asynchronous Example
+
+Here's a minimal async GET request using a timer:
+
+```lua
+local ffi = require("ffi")
+local http = ffi.load("sapp_http")
+
+-- Load the cdef automatically (or call sapp_http_get_cdef() once)
+ffi.cdef(http.sapp_http_get_cdef())
+
+-- Initialise once at startup
+http.sapp_http_global_init()
+
+-- Create a request (non‑blocking)
+local req = http.sapp_http_create_get("https://httpbin.org/get", nil, 0)
+
+-- In a timer callback (e.g. every 100 ms):
+while http.sapp_http_request_is_done(req) == 0 do
+    http.sapp_http_process()
+    -- yield or sleep to avoid busy‑waiting
+    coroutine.yield()  -- if using a coroutine timer
+end
+
+-- Retrieve the response
+local resp = ffi.new("sapp_http_response")
+local status = http.sapp_http_request_get_response(req, resp)
+if status == 0 then
+    print("Status:", resp.http_status)
+    print("Body:", ffi.string(resp.body, resp.body_size))
+    http.sapp_http_free_response(resp)
+else
+    print("Error:", resp.error_message)
+end
+
+-- Clean up
+http.sapp_http_request_free(req)
+http.sapp_http_global_cleanup()
+```
 
 </details>
 

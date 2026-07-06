@@ -2,38 +2,8 @@
 
 ---@diagnostic disable-next-line: unresolved-require
 local ffi = require("ffi")
-local http = ffi.load("sapp_http") -- load the HTTP library
-
-ffi.cdef [[
-typedef struct sapp_http_header {
-    const char *name;
-    const char *value;
-} sapp_http_header;
-
-typedef struct sapp_http_response {
-    int curl_code;
-    long http_status;
-    size_t body_size;
-    char *body;
-    char *content_type;
-    char *error_message;
-} sapp_http_response;
-
-typedef struct sapp_http_request sapp_http_request;
-
-int sapp_http_global_init(void);
-void sapp_http_global_cleanup(void);
-
-sapp_http_request* sapp_http_create_get(const char *url,
-                                        const sapp_http_header *headers,
-                                        size_t header_count);
-int sapp_http_process(void);
-int sapp_http_request_is_done(sapp_http_request *req);
-int sapp_http_request_get_response(sapp_http_request *req,
-                                   sapp_http_response *out);
-void sapp_http_request_free(sapp_http_request *req);
-void sapp_http_free_response(sapp_http_response *response);
-]]
+local http = ffi.load("sapp_http")
+ffi.cdef(ffi.string(http.sapp_http_get_cdef()))
 
 local function extract_json_value(json, key)
     local pattern = '"' .. key .. '"%s*:%s*"([^"]*)"'
@@ -48,7 +18,7 @@ local url = "https://httpbin.org/json"
 local request_handle = nil
 
 function OnScriptLoad()
-    http.sapp_http_global_init() -- start up cURL
+    http.sapp_http_global_init()
 
     print("\n--- GET JSON from: " .. url .. " ---")
     request_handle = http.sapp_http_create_get(url, nil, 0)
@@ -76,7 +46,6 @@ function CheckJSON()
             print("Raw JSON:")
             print(json)
 
-            -- Simple extraction example
             local slideshow_title = extract_json_value(json, "title")
             if slideshow_title then
                 print("\nExtracted title: " .. slideshow_title)
@@ -93,5 +62,5 @@ function OnScriptUnload()
         http.sapp_http_request_free(request_handle)
         request_handle = nil
     end
-    http.sapp_http_global_cleanup() -- shut down cURL
+    http.sapp_http_global_cleanup()
 end

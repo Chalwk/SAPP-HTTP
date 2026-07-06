@@ -11,7 +11,6 @@ local request_handle = nil
 function OnScriptLoad()
     if not http_helper.init() then return end
 
-    -- Use async version from helper
     request_handle = http_helper.create_get("https://httpbin.org/get")
     if request_handle == nil then
         print("ERROR: Failed to create GET request")
@@ -35,7 +34,7 @@ function CheckHelper()
             print("Body: " .. ffi.string(resp.body, resp.body_size))
         end
 
-        http_helper.free(resp) -- free the response memory
+        http_helper.free(resp)
     else
         timer(100, "CheckHelper")
     end
@@ -46,5 +45,5 @@ function OnScriptUnload()
         http_helper.free_request(request_handle)
         request_handle = nil
     end
-    http_helper.cleanup() -- shut down cURL
+    http_helper.cleanup()
 end

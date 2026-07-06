@@ -2,41 +2,8 @@
 
 ---@diagnostic disable-next-line: unresolved-require
 local ffi = require("ffi")
-local http = ffi.load("sapp_http") -- load the HTTP library
-
-ffi.cdef [[
-typedef struct sapp_http_header {
-    const char *name;
-    const char *value;
-} sapp_http_header;
-
-typedef struct sapp_http_response {
-    int curl_code;
-    long http_status;
-    size_t body_size;
-    char *body;
-    char *content_type;
-    char *error_message;
-} sapp_http_response;
-
-typedef struct sapp_http_request sapp_http_request;
-
-int sapp_http_global_init(void);
-void sapp_http_global_cleanup(void);
-
-sapp_http_request* sapp_http_create_post(const char *url,
-                                         const char *content_type,
-                                         const char *body,
-                                         size_t body_size,
-                                         const sapp_http_header *headers,
-                                         size_t header_count);
-int sapp_http_process(void);
-int sapp_http_request_is_done(sapp_http_request *req);
-int sapp_http_request_get_response(sapp_http_request *req,
-                                   sapp_http_response *out);
-void sapp_http_request_free(sapp_http_request *req);
-void sapp_http_free_response(sapp_http_response *response);
-]]
+local http = ffi.load("sapp_http")
+ffi.cdef(ffi.string(http.sapp_http_get_cdef()))
 
 api_version = "1.12.0.0"
 
@@ -45,9 +12,8 @@ local done = false
 local webhook_url = "https://discord.com/api/webhooks/WEBHOOK_ID/WEBHOOK_TOKEN"
 
 function OnScriptLoad()
-    http.sapp_http_global_init() -- start up cURL
+    http.sapp_http_global_init()
 
-    -- Discord expects JSON with a "content" field
     local message = '{"content": "Hello from SAPP server! http_discord_webhook.lua loaded."}'
     local content_type = "application/json"
 
@@ -58,14 +24,13 @@ function OnScriptLoad()
         return
     end
 
-    -- Start polling timer (every 100ms)
     timer(100, "CheckWebhook")
 end
 
 function CheckWebhook()
     if request_handle == nil then return end
 
-    http.sapp_http_process() -- drive the request
+    http.sapp_http_process()
 
     if http.sapp_http_request_is_done(request_handle) == 1 then
         local resp = ffi.new("sapp_http_response")
@@ -88,9 +53,9 @@ function CheckWebhook()
                 print("Error: " .. ffi.string(resp.error_message))
             end
         end
-        http.sapp_http_free_response(resp) -- free the response memory
+        http.sapp_http_free_response(resp)
     else
-        timer(100, "CheckWebhook") -- poll again
+        timer(100, "CheckWebhook")
     end
 end
 
@@ -99,5 +64,5 @@ function OnScriptUnload()
         http.sapp_http_request_free(request_handle)
         request_handle = nil
     end
-    http.sapp_http_global_cleanup() -- shut down cURL
+    http.sapp_http_global_cleanup()
 end

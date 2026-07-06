@@ -2,41 +2,8 @@
 
 ---@diagnostic disable-next-line: unresolved-require
 local ffi = require("ffi")
-local http = ffi.load("sapp_http") -- load the HTTP library
-
-ffi.cdef [[
-typedef struct sapp_http_header {
-    const char *name;
-    const char *value;
-} sapp_http_header;
-
-typedef struct sapp_http_response {
-    int curl_code;
-    long http_status;
-    size_t body_size;
-    char *body;
-    char *content_type;
-    char *error_message;
-} sapp_http_response;
-
-typedef struct sapp_http_request sapp_http_request;
-
-int sapp_http_global_init(void);
-void sapp_http_global_cleanup(void);
-
-sapp_http_request* sapp_http_create_post(const char *url,
-                                         const char *content_type,
-                                         const char *body,
-                                         size_t body_size,
-                                         const sapp_http_header *headers,
-                                         size_t header_count);
-int sapp_http_process(void);
-int sapp_http_request_is_done(sapp_http_request *req);
-int sapp_http_request_get_response(sapp_http_request *req,
-                                   sapp_http_response *out);
-void sapp_http_request_free(sapp_http_request *req);
-void sapp_http_free_response(sapp_http_response *response);
-]]
+local http = ffi.load("sapp_http")
+ffi.cdef(ffi.string(http.sapp_http_get_cdef()))
 
 api_version = "1.12.0.0"
 
@@ -46,7 +13,7 @@ local content_type = "application/json"
 local request_handle = nil
 
 function OnScriptLoad()
-    http.sapp_http_global_init() -- start up cURL
+    http.sapp_http_global_init()
 
     print("\n--- POST JSON to: " .. url .. " ---")
     print("Payload: " .. json_body)
@@ -76,7 +43,7 @@ function CheckPostJSON()
             print(ffi.string(resp.body, resp.body_size))
         end
 
-        http.sapp_http_free_response(resp) -- free the response memory
+        http.sapp_http_free_response(resp)
     else
         timer(100, "CheckPostJSON")
     end
@@ -87,5 +54,5 @@ function OnScriptUnload()
         http.sapp_http_request_free(request_handle)
         request_handle = nil
     end
-    http.sapp_http_global_cleanup() -- shut down cURL
+    http.sapp_http_global_cleanup()
 end
