@@ -4,7 +4,70 @@
 ---@diagnostic disable-next-line: unresolved-require
 local ffi = require("ffi")
 local http = ffi.load("sapp_http")
-ffi.cdef(ffi.string(http.sapp_http_get_cdef()))
+
+ffi.cdef([[
+    typedef struct sapp_http_header {
+        const char *name;
+        const char *value;
+    } sapp_http_header;
+
+    typedef struct sapp_http_response {
+        int curl_code;
+        long http_status;
+        size_t body_size;
+        char *body;
+        char *content_type;
+        char *error_message;
+    } sapp_http_response;
+
+    typedef struct sapp_http_request sapp_http_request;
+
+    int sapp_http_global_init(void);
+    void sapp_http_global_cleanup(void);
+    const char *sapp_http_version(void);
+    const char *sapp_http_curl_strerror(int curl_code);
+
+    int sapp_http_get(const char *url,
+                      const sapp_http_header *headers,
+                      size_t header_count,
+                      sapp_http_response *out);
+    int sapp_http_post(const char *url,
+                       const char *content_type,
+                       const char *body,
+                       size_t body_size,
+                       const sapp_http_header *headers,
+                       size_t header_count,
+                       sapp_http_response *out);
+    int sapp_http_put(const char *url,
+                      const char *content_type,
+                      const char *body,
+                      size_t body_size,
+                      const sapp_http_header *headers,
+                      size_t header_count,
+                      sapp_http_response *out);
+    void sapp_http_free_response(sapp_http_response *response);
+
+    sapp_http_request* sapp_http_create_get(const char *url,
+                                            const sapp_http_header *headers,
+                                            size_t header_count);
+    sapp_http_request* sapp_http_create_post(const char *url,
+                                             const char *content_type,
+                                             const char *body,
+                                             size_t body_size,
+                                             const sapp_http_header *headers,
+                                             size_t header_count);
+    sapp_http_request* sapp_http_create_put(const char *url,
+                                            const char *content_type,
+                                            const char *body,
+                                            size_t body_size,
+                                            const sapp_http_header *headers,
+                                            size_t header_count);
+    int sapp_http_process(void);
+    int sapp_http_request_is_done(sapp_http_request *req);
+    int sapp_http_request_get_response(sapp_http_request *req,
+                                       sapp_http_response *out);
+    void sapp_http_request_free(sapp_http_request *req);
+]])
 
 local M = {}
 

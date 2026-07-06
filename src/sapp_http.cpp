@@ -983,7 +983,6 @@ extern "C"
         std::free(req_impl->error_message);
         // response buffer is freed by memory_buffer destructor (if not transferred)
 
-        // Remove from global list
         {
             std::lock_guard<std::mutex> lock(g_requests_mutex);
             auto it = std::find(g_requests.begin(), g_requests.end(), req_impl);
@@ -994,65 +993,4 @@ extern "C"
         delete req_impl;
     }
 
-    // ------------------------------------------------------------------
-    //  Returns the full ffi.cdef declaration as a C string to streamline
-    //  Lua scripts. This eliminates the need for each script to repeat
-    //  the large cdef block, reducing boilerplate and maintenance.
-    // ------------------------------------------------------------------
-    SAPPHTTP_API const char *SAPPHTTP_CALL sapp_http_get_cdef(void)
-    {
-        static const char *cdef = R"(
-typedef struct sapp_http_header {
-    const char *name;
-    const char *value;
-} sapp_http_header;
-
-typedef struct sapp_http_response {
-    int curl_code;
-    long http_status;
-    size_t body_size;
-    char *body;
-    char *content_type;
-    char *error_message;
-} sapp_http_response;
-
-typedef struct sapp_http_request sapp_http_request;
-
-enum sapp_http_status {
-    SAPPHTTP_OK = 0,
-    SAPPHTTP_E_INVALID_ARGUMENT = -1,
-    SAPPHTTP_E_CURL_INIT_FAILED = -2,
-    SAPPHTTP_E_CURL_OPTION_FAILED = -3,
-    SAPPHTTP_E_OUT_OF_MEMORY = -4
-};
-
-int sapp_http_global_init(void);
-void sapp_http_global_cleanup(void);
-
-sapp_http_request* sapp_http_create_get(const char *url,
-                                        const sapp_http_header *headers,
-                                        size_t header_count);
-sapp_http_request* sapp_http_create_post(const char *url,
-                                         const char *content_type,
-                                         const char *body,
-                                         size_t body_size,
-                                         const sapp_http_header *headers,
-                                         size_t header_count);
-sapp_http_request* sapp_http_create_put(const char *url,
-                                        const char *content_type,
-                                        const char *body,
-                                        size_t body_size,
-                                        const sapp_http_header *headers,
-                                        size_t header_count);
-int sapp_http_process(void);
-int sapp_http_request_is_done(sapp_http_request *req);
-int sapp_http_request_get_response(sapp_http_request *req,
-                                   sapp_http_response *out);
-void sapp_http_request_free(sapp_http_request *req);
-void sapp_http_free_response(sapp_http_response *response);
-const char *sapp_http_version(void);
-const char *sapp_http_curl_strerror(int curl_code);
-)";
-        return cdef;
-    }
-}
+} // extern "C"

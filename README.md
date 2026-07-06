@@ -1,11 +1,8 @@
 # SAPP HTTP Client DLL
 
-A lightweight HTTP/HTTPS client DLL for SAPP that exposes a C API through LuaJIT
-FFI, allowing Lua scripts to perform HTTP(S) GET, POST, and PUT requests using **libcurl**.
+A lightweight HTTP/HTTPS client DLL for SAPP that exposes a C API through LuaJIT FFI, allowing Lua scripts to perform HTTP(S) GET, POST, and PUT requests using **libcurl**.
 
 Supports both **synchronous** (blocking) and **asynchronous** (non‑blocking) requests.
-
-Built with **MSVC**, **CMake**, and **vcpkg**.
 
 [![Version][version-badge]][version-link]
 [![License: MIT][license-badge]][license-link]
@@ -21,7 +18,7 @@ Built with **MSVC**, **CMake**, and **vcpkg**.
 * **Global** - `sapp_http_global_init`, `sapp_http_global_cleanup`
 * **Synchronous** - `sapp_http_get`, `sapp_http_post`, `sapp_http_put`, `sapp_http_free_response`
 * **Asynchronous** - `sapp_http_create_get`, `sapp_http_create_post`, `sapp_http_create_put`, `sapp_http_process`, `sapp_http_request_is_done`, `sapp_http_request_get_response`, `sapp_http_request_free`
-* **Utilities** - `sapp_http_version`, `sapp_http_curl_strerror`, `sapp_http_get_cdef`
+* **Utilities** - `sapp_http_version`, `sapp_http_curl_strerror`
 
 See [`sapp_http.h`](src/sapp_http.h) for the complete API.
 
@@ -29,11 +26,11 @@ See [`sapp_http.h`](src/sapp_http.h) for the complete API.
 
 ## Requirements
 
-* **Visual Studio Build Tools 2022** (or later) with the **Desktop development with C++** workload
+* **Visual Studio Build Tools 2022** (or later) with the **Desktop development with C++** workload, including:
   * MSVC v143
   * Windows 10/11 SDK
   * CMake tools
-  * vcpkg
+* **vcpkg**
 * **CMake** 3.21 or later
 
 ---
@@ -42,7 +39,7 @@ See [`sapp_http.h`](src/sapp_http.h) for the complete API.
 
 ### 1. Install vcpkg
 
-Open a terminal and clone vcpkg into a convenient location (here `C:\dev\vcpkg`):
+Open a terminal and clone vcpkg into a convenient location, e.g. `C:\dev\vcpkg`:
 
 ```cmd
 git clone https://github.com/microsoft/vcpkg C:\dev\vcpkg
@@ -81,23 +78,7 @@ cmake --build build --config Release
 
 On success, the DLL is created at: `C:\dev\sapp-http\build\Release\sapp_http.dll`
 
-> **If you're using VS Code with the CMake Tools extension**, you may see a false error on `find_package(CURL)` because the extension does not automatically use the vcpkg toolchain. To fix this, create a `.vscode/settings.json` file in the project root with:
->
-> ```json
-> {
->     "cmake.configureArgs": [
->         "-DCMAKE_TOOLCHAIN_FILE=C:/dev/vcpkg/scripts/buildsystems/vcpkg.cmake",
->         "-DVCPKG_TARGET_TRIPLET=x86-windows-static"
->     ]
-> }
-> ```
->
-> Adjust the paths to match your own vcpkg installation. After saving, run `CMake: Configure` from the command palette to refresh the configuration.
->
-> **Important: As Halo is a 32-bit application, the architecture in your CMake Tools settings must match the vcpkg triplet.**  
-> For the default triplet `x86-windows-static`, you need a 32-bit (Win32) build target. To enforce this:
->
-> **Select the right kit** - Press `Ctrl+Shift+P`, choose `CMake: Select Kit`, and pick a kit that targets **x86** (e.g., `VS Build Tools ... - amd64_x86` or `VS Build Tools ... - x86`).
+Alternatively, run the convenience script: `builld.bat`
 
 ---
 
@@ -105,46 +86,6 @@ On success, the DLL is created at: `C:\dev\sapp-http\build\Release\sapp_http.dll
 
 Copy `sapp_http.dll` into the same folder as `sapp.dll` (the SAPP server binary).  
 Then, from your Lua scripts, use `ffi.load("sapp_http")` and call the API.
-
----
-
-## API Overview
-
-### Initialisation & Cleanup
-
-Before using any HTTP functions, call `sapp_http_global_init()` once (e.g. at server start).  
-At shutdown, call `sapp_http_global_cleanup()` to release all resources.
-
-### Synchronous Requests (Blocking)
-
-Use these functions when you want a simple, blocking call - they return only when the request completes.
-
-* `sapp_http_get(url, headers, header_count, out_response)`
-* `sapp_http_post(url, content_type, body, body_size, headers, header_count, out_response)`
-* `sapp_http_put(url, content_type, body, body_size, headers, header_count, out_response)`
-
-The response is filled in a `sapp_http_response` structure. Always call `sapp_http_free_response()` to free the memory.
-
-### Asynchronous Requests (Non‑Blocking)
-
-For non‑blocking behaviour, create a request handle, then periodically call `sapp_http_process()` (e.g. from a timer) to drive the transfers. When the request is done, retrieve the response and free the handle.
-
-* `sapp_http_create_get(url, headers, header_count)` - returns a `sapp_http_request*` handle
-* `sapp_http_create_post(url, content_type, body, body_size, headers, header_count)`
-* `sapp_http_create_put(url, content_type, body, body_size, headers, header_count)`
-
-Then:
-
-* `sapp_http_process()` - processes pending transfers; returns the number of still‑active requests
-* `sapp_http_request_is_done(req)` - returns 1 if finished, 0 otherwise
-* `sapp_http_request_get_response(req, out_response)` - copies the response into `out_response` (remember to free it later with `sapp_http_free_response`)
-* `sapp_http_request_free(req)` - frees all resources associated with the handle (safe to call even if still active)
-
-### Utility Functions
-
-* `sapp_http_version()` - returns the libcurl version string
-* `sapp_http_curl_strerror(curl_code)` - returns a human‑readable error message for a CURLcode
-* `sapp_http_get_cdef()` - returns the full `ffi.cdef` declaration as a C string, saving you from typing it manually in Lua
 
 ---
 

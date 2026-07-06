@@ -137,12 +137,6 @@ extern "C"
     // Safe to call even if the request is still active (it will be removed first).
     SAPPHTTP_API void SAPPHTTP_CALL sapp_http_request_free(sapp_http_request *req);
 
-    // ------------------------------------------------------------------
-    //  Returns the full ffi.cdef declaration as a C string.
-    //  This eliminates the need to repeat the large cdef block in every Lua script.
-    // ------------------------------------------------------------------
-    SAPPHTTP_API const char *SAPPHTTP_CALL sapp_http_get_cdef(void);
-
 #ifdef __cplusplus
 }
 #endif
