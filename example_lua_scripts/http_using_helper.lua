@@ -1,6 +1,5 @@
 -- Copyright (c) 2026 Jericho Crosby (Chalwk)
 
----@diagnostic disable-next-line: unresolved-require
 local ffi = require("ffi")
 local http_helper = require("http_helper")
 
@@ -11,7 +10,7 @@ local request_handle = nil
 function OnScriptLoad()
     if not http_helper.init() then return end
 
-    request_handle = http_helper.create_get("https://httpbin.org/get")
+    request_handle = http_helper.get("https://httpbin.org/get")
     if request_handle == nil then
         print("ERROR: Failed to create GET request")
         return

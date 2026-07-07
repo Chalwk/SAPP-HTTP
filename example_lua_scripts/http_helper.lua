@@ -1,5 +1,5 @@
 -- Copyright (c) 2026 Jericho Crosby (Chalwk)
--- Save this as a separate file and require it from other scripts
+-- Save this as a separate file and require it from other scripts.
 
 ---@diagnostic disable-next-line: unresolved-require
 local ffi = require("ffi")
@@ -55,6 +55,34 @@ ffi.cdef(
 local M = {}
 local initialized = false
 
+-- ----------------------------------------------------------------------
+-- Utility: convert a Lua table of headers into a C array of
+-- sapp_http_header, and return (array, count). Returns (nil, 0) if
+-- the table is empty or nil.
+-- ----------------------------------------------------------------------
+local function make_headers(tbl)
+    if not tbl then return nil, 0 end
+    -- Count entries
+    local count = 0
+    for _ in pairs(tbl) do
+        count = count + 1
+    end
+    if count == 0 then return nil, 0 end
+
+    local arr = ffi.new("sapp_http_header[?]", count)
+    local i = 0
+    for k, v in pairs(tbl) do
+        arr[i].name = ffi.new("char[?]", #k + 1, k)
+        arr[i].value = ffi.new("char[?]", #v + 1, v)
+        i = i + 1
+    end
+    return arr, count
+end
+
+-- ----------------------------------------------------------------------
+-- Public API
+-- ----------------------------------------------------------------------
+
 function M.init()
     if not initialized then
         local ret = http.sapp_http_global_init()
@@ -75,22 +103,24 @@ function M.cleanup()
     end
 end
 
--- GET: returns request handle (or nil)
+-- GET request: headers can be a table (name->value) or nil.
 function M.get(url, headers)
-    local header_count = headers and #headers or 0
-    return http.sapp_http_create_get(url, headers, header_count)
+    local hdr_arr, hdr_count = make_headers(headers)
+    return http.sapp_http_create_get(url, hdr_arr, hdr_count)
 end
 
--- POST: returns request handle (or nil)
+-- POST request: headers can be a table or nil.
 function M.post(url, content_type, body, headers)
-    local header_count = headers and #headers or 0
-    return http.sapp_http_create_post(url, content_type, body, #body, headers, header_count)
+    local hdr_arr, hdr_count = make_headers(headers)
+    local body_len = body and #body or 0
+    return http.sapp_http_create_post(url, content_type, body, body_len, hdr_arr, hdr_count)
 end
 
--- PUT: returns request handle (or nil)
+-- PUT request: headers can be a table or nil.
 function M.put(url, content_type, body, headers)
-    local header_count = headers and #headers or 0
-    return http.sapp_http_create_put(url, content_type, body, #body, headers, header_count)
+    local hdr_arr, hdr_count = make_headers(headers)
+    local body_len = body and #body or 0
+    return http.sapp_http_create_put(url, content_type, body, body_len, hdr_arr, hdr_count)
 end
 
 -- Drive pending transfers
@@ -98,7 +128,7 @@ function M.process()
     return http.sapp_http_process()
 end
 
--- Check completion
+-- Check completion (returns 1 if done, 0 if still pending, or negative on error)
 function M.is_done(req)
     return http.sapp_http_request_is_done(req)
 end
@@ -120,7 +150,7 @@ function M.free(resp)
     http.sapp_http_free_response(resp)
 end
 
--- Utility
+-- Utility: get curl error string
 function M.curl_strerror(code)
     return http.sapp_http_curl_strerror(code)
 end

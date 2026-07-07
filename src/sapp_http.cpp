@@ -199,79 +199,6 @@ namespace
     }
 
     // ------------------------------------------------------------------
-    //  DNS-over-HTTPS resolution (fallback when normal DNS is broken)
-    //  Tries Google and Cloudflare, returns first IP found.
-    //  Not ideal, but I'll keep it simple for now.
-    // ------------------------------------------------------------------
-
-    static std::string resolve_via_doh(const std::string &host)
-    {
-        const char *urls[] = {
-            "https://8.8.8.8/resolve?name=",
-            "https://1.1.1.1/dns-query?name="};
-        const char *hosts[] = {
-            "dns.google",
-            "cloudflare-dns.com"};
-
-        for (int attempt = 0; attempt < 2; ++attempt)
-        {
-            std::string url = urls[attempt] + host + "&type=A";
-            memory_buffer buf;
-            curl_handle curl;
-            if (!curl)
-                continue;
-
-            curl_slist_holder headers;
-            std::string host_line = "Host: ";
-            host_line += hosts[attempt];
-            if (!headers.append(host_line))
-                continue;
-
-            curl_easy_setopt(curl.get(), CURLOPT_TIMEOUT_MS, 15000L);
-            curl_easy_setopt(curl.get(), CURLOPT_URL, url.c_str());
-            curl_easy_setopt(curl.get(), CURLOPT_WRITEFUNCTION, write_callback);
-            curl_easy_setopt(curl.get(), CURLOPT_WRITEDATA, &buf);
-            curl_easy_setopt(curl.get(), CURLOPT_SSL_VERIFYPEER, 1L);
-            curl_easy_setopt(curl.get(), CURLOPT_SSL_VERIFYHOST, 2L);
-            curl_easy_setopt(curl.get(), CURLOPT_USERAGENT, "sapp-http/1.0");
-            curl_easy_setopt(curl.get(), CURLOPT_FOLLOWLOCATION, 1L);
-            curl_easy_setopt(curl.get(), CURLOPT_NOSIGNAL, 1L);
-            curl_easy_setopt(curl.get(), CURLOPT_PROXY, "");
-            curl_easy_setopt(curl.get(), CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
-            curl_easy_setopt(curl.get(), CURLOPT_HTTPHEADER, headers.get());
-
-            CURLcode res = curl_easy_perform(curl.get());
-            std::string ip;
-            if (res == CURLE_OK && buf.data && buf.size > 0)
-            {
-                std::string json(buf.data, buf.size);
-                // Cheap JSON parse - just look for "data":"ip"
-                size_t pos = json.find("\"data\"");
-                if (pos != std::string::npos)
-                {
-                    pos = json.find(':', pos);
-                    if (pos != std::string::npos)
-                    {
-                        pos = json.find('"', pos);
-                        if (pos != std::string::npos)
-                        {
-                            size_t start = pos + 1;
-                            size_t end = json.find('"', start);
-                            if (end != std::string::npos)
-                            {
-                                ip = json.substr(start, end - start);
-                            }
-                        }
-                    }
-                }
-            }
-            if (!ip.empty())
-                return ip;
-        }
-        return "";
-    }
-
-    // ------------------------------------------------------------------
     //  Common option setup for async requests
     // ------------------------------------------------------------------
 
@@ -297,7 +224,7 @@ namespace
         code = curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 2L);
         if (code != CURLE_OK)
             goto fail;
-        code = curl_easy_setopt(easy, CURLOPT_USERAGENT, "sapp-http/1.0");
+        code = curl_easy_setopt(easy, CURLOPT_USERAGENT, "sapp-http/1.9");
         if (code != CURLE_OK)
             goto fail;
         code = curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, write_callback);
@@ -318,9 +245,6 @@ namespace
         code = curl_easy_setopt(easy, CURLOPT_PROXY, "");
         if (code != CURLE_OK)
             goto fail;
-        code = curl_easy_setopt(easy, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
-        if (code != CURLE_OK)
-            goto fail;
         if (error_buffer)
             code = curl_easy_setopt(easy, CURLOPT_ERRORBUFFER, error_buffer);
         return code == CURLE_OK;
@@ -330,34 +254,6 @@ namespace
             snprintf(error_buffer, CURL_ERROR_SIZE, "libcurl option failed");
         }
         return false;
-    }
-
-    static curl_slist *build_resolve_list(const char *url, const std::string &hostname)
-    {
-        if (hostname.empty() || std::isdigit(hostname[0]))
-            return nullptr;
-
-        std::string ip = resolve_via_doh(hostname);
-        if (ip.empty())
-            return nullptr;
-
-        int port = 80;
-        if (strstr(url, "https://"))
-            port = 443;
-        const char *host_start = strstr(url, "://");
-        if (host_start)
-        {
-            host_start += 3;
-            const char *colon = strchr(host_start, ':');
-            if (colon)
-            {
-                port = std::atoi(colon + 1);
-            }
-        }
-        char port_str[16];
-        snprintf(port_str, sizeof(port_str), "%d", port);
-        std::string resolve_str = hostname + ":" + port_str + ":" + ip;
-        return curl_slist_append(nullptr, resolve_str.c_str());
     }
 
     // ------------------------------------------------------------------
@@ -375,7 +271,6 @@ namespace
     {
         CURL *easy = nullptr;
         curl_slist *headers = nullptr;
-        curl_slist *resolve_list = nullptr;
         memory_buffer response;
         char *content_type = nullptr;
         char *error_message = nullptr;
@@ -457,42 +352,17 @@ namespace
         }
         req->headers = hlist;
 
-        // DNS fallback
-        std::string hostname;
-        const char *host_start = strstr(url, "://");
-        if (host_start)
-        {
-            host_start += 3;
-            const char *host_end = strchr(host_start, '/');
-            if (!host_end)
-                host_end = host_start + std::strlen(host_start);
-            hostname = std::string(host_start, host_end - host_start);
-        }
-        size_t colon_pos = hostname.find(':');
-        if (colon_pos != std::string::npos)
-            hostname = hostname.substr(0, colon_pos);
-
-        if (!hostname.empty() && !std::isdigit(hostname[0]))
-        {
-            req->resolve_list = build_resolve_list(url, hostname);
-            if (req->resolve_list)
-            {
-                curl_easy_setopt(req->easy, CURLOPT_RESOLVE, req->resolve_list);
-            }
-        }
-
         char error_buffer[CURL_ERROR_SIZE] = {0};
         if (!set_common_options(req->easy, url, req->headers, &req->response, error_buffer))
         {
             curl_slist_free_all(req->headers);
-            curl_slist_free_all(req->resolve_list);
             curl_easy_cleanup(req->easy);
             std::free(req->request_body);
             delete req;
             return nullptr;
         }
 
-        // Method-specific
+        // Method-specific options
         CURLcode code = CURLE_OK;
         switch (method)
         {
@@ -520,14 +390,13 @@ namespace
         if (code != CURLE_OK)
         {
             curl_slist_free_all(req->headers);
-            curl_slist_free_all(req->resolve_list);
             curl_easy_cleanup(req->easy);
             std::free(req->request_body);
             delete req;
             return nullptr;
         }
 
-        // Store pointer in easy handle for lookup (use CURLINFO_PRIVATE when reading)
+        // Store pointer in easy handle
         curl_easy_setopt(req->easy, CURLOPT_PRIVATE, req);
 
         {
@@ -552,7 +421,7 @@ namespace
         return req;
     }
 
-}
+} // namespace
 
 // ------------------------------------------------------------------
 //  Exported C functions
@@ -600,7 +469,6 @@ extern "C"
                 if (req->easy)
                     curl_easy_cleanup(req->easy);
                 curl_slist_free_all(req->headers);
-                curl_slist_free_all(req->resolve_list);
                 std::free(req->request_body);
                 std::free(req->content_type);
                 std::free(req->error_message);
@@ -692,7 +560,6 @@ extern "C"
             {
                 CURL *easy = msg->easy_handle;
                 AsyncRequest *req = nullptr;
-                // Use CURLINFO_PRIVATE to retrieve the stored pointer
                 curl_easy_getinfo(easy, CURLINFO_PRIVATE, &req);
                 if (req)
                 {
@@ -780,7 +647,6 @@ extern "C"
             req_impl->easy = nullptr;
         }
         curl_slist_free_all(req_impl->headers);
-        curl_slist_free_all(req_impl->resolve_list);
         std::free(req_impl->request_body);
         std::free(req_impl->content_type);
         std::free(req_impl->error_message);
