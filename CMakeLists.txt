@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(sapp_http VERSION 1.0.9 LANGUAGES CXX)
+project(sapp_http VERSION 1.0.10 LANGUAGES CXX)
 
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 

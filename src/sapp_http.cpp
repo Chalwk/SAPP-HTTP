@@ -224,7 +224,7 @@ namespace
         code = curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 2L);
         if (code != CURLE_OK)
             goto fail;
-        code = curl_easy_setopt(easy, CURLOPT_USERAGENT, "sapp-http/1.9");
+        code = curl_easy_setopt(easy, CURLOPT_USERAGENT, "sapp-http/1.0.10");
         if (code != CURLE_OK)
             goto fail;
         code = curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, write_callback);
