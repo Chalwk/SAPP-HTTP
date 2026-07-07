@@ -83,7 +83,7 @@ Alternatively, run the convenience script: `build.bat`
 
 ## Deploying
 
-Copy `sapp_http.dll` into the same folder as `sapp.dll` (the SAPP server binary).  
+Copy `sapp_http.dll` into the same folder as `sapp.dll` (the SAPP server binary).
 Then, from your Lua scripts, use `ffi.load("sapp_http")` and call the API.
 
 ---
@@ -141,7 +141,7 @@ http.sapp_http_request_free(req)
 http.sapp_http_global_cleanup()
 ```
 
-For more advanced, SAPP-specific examples (custom headers, POST/PUT, JSON handling, error handling, etc.), see the [`example_lua_scripts`](/example_lua_scripts) folder.
+For more advanced, SAPP-specific examples, see the [`example_lua_scripts`](/example_lua_scripts) folder.
 
 ---
 

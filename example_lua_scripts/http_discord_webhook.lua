@@ -1,4 +1,5 @@
 -- Copyright (c) 2026 Jericho Crosby (Chalwk)
+---@diagnostic disable: undefined-field
 
 ---@diagnostic disable-next-line: unresolved-require
 local ffi = require("ffi")
@@ -89,6 +90,7 @@ function CheckWebhook()
 end
 
 function OnScriptUnload()
+    ---@diagnostic disable-next-line: unnecessary-if
     if request_handle then
         http.sapp_http_request_free(request_handle)
         request_handle = nil

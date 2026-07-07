@@ -71,8 +71,11 @@ local function make_headers(tbl)
 
     local arr = ffi.new("sapp_http_header[?]", count)
     local i = 0
+    
     for k, v in pairs(tbl) do
+        ---@diagnostic disable-next-line: undefined-field
         arr[i].name = ffi.new("char[?]", #k + 1, k)
+        ---@diagnostic disable-next-line: undefined-field
         arr[i].value = ffi.new("char[?]", #v + 1, v)
         i = i + 1
     end

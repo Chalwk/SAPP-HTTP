@@ -1,4 +1,5 @@
 -- Copyright (c) 2026 Jericho Crosby (Chalwk)
+---@diagnostic disable: undefined-field
 
 local ffi = require("ffi")
 local http_helper = require("http_helper")
@@ -40,6 +41,7 @@ function CheckHelper()
 end
 
 function OnScriptUnload()
+    ---@diagnostic disable-next-line: unnecessary-if
     if request_handle then
         http_helper.free_request(request_handle)
         request_handle = nil
