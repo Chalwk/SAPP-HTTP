@@ -1,4 +1,4 @@
-# SAPP HTTP Client DLL (Asynchronous Only)
+# SAPP HTTP Client DLL
 
 A lightweight, HTTP/HTTPS client DLL for SAPP that exposes a C API through LuaJIT FFI, allowing Lua scripts to perform HTTP(S) GET, POST, and PUT requests using **libcurl**.
 
